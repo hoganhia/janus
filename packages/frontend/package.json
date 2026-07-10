@@ -1,0 +1,10 @@
+{
+  "name": "@janus/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'Frontend scaffold — not yet implemented'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
