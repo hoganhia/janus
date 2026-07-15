@@ -87,6 +87,8 @@ function connectionFailureResult(
           reason !== undefined
             ? `Could not fingerprint ${url}: the target failed validation (${reason}).`
             : `Could not fingerprint ${url}. The site may be down, blocking scans, or unreachable.`,
+        recommendation:
+          'Confirm the server responds to standard HTTP(S) requests from external clients — check for a firewall, load balancer, or DNS issue blocking access.',
         details: { error: err instanceof Error ? err.message : String(err) },
       },
     ],
@@ -157,6 +159,7 @@ export async function fingerprintStack(
             label: check.label,
             status: 'warning',
             explanation: `Found ${check.label} at ${check.path}. This is a general technology signal, not enough on its own to identify a specific framework or version for CVE matching.`,
+            recommendation: `If not needed publicly, restrict or remove access to ${check.path} to reduce what attackers can passively learn about your stack.`,
           });
         }
       } catch {
@@ -178,6 +181,7 @@ export async function fingerprintStack(
           detection.version !== undefined
             ? `Detected ${productName} version ${detection.version} via ${detection.sources.join(', ')}.`
             : `Detected ${productName} via ${detection.sources.join(', ')}, but no version could be determined.`,
+        recommendation: `Consider suppressing version identifiers in ${detection.sources.join(', ')} — publicly disclosing exact versions makes it easier for an attacker to target known vulnerabilities in that specific release.`,
         details: {
           productKey: detection.productKey,
           version: detection.version ?? null,

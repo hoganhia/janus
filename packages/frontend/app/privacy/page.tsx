@@ -5,7 +5,7 @@ import { LegalReviewBanner } from '@/components/legal-review-banner';
 import { LegalVersionBadge } from '@/components/legal-version-badge';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Perimeter',
+  title: 'Privacy Policy — Janus',
 };
 
 export default function PrivacyPage() {

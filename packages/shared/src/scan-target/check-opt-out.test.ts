@@ -17,16 +17,16 @@ describe('checkOptOut', () => {
     vi.resetAllMocks();
   });
 
-  it('queries the _perimeter-opt-out label under the target hostname', async () => {
+  it('queries the _janus-opt-out label under the target hostname', async () => {
     resolveTxt.mockResolvedValueOnce([['true']]);
     await checkOptOut('example.com');
-    expect(resolveTxt).toHaveBeenCalledWith('_perimeter-opt-out.example.com');
+    expect(resolveTxt).toHaveBeenCalledWith('_janus-opt-out.example.com');
   });
 
   it('lowercases the hostname before building the query name', async () => {
     resolveTxt.mockResolvedValueOnce([['true']]);
     await checkOptOut('Example.COM');
-    expect(resolveTxt).toHaveBeenCalledWith('_perimeter-opt-out.example.com');
+    expect(resolveTxt).toHaveBeenCalledWith('_janus-opt-out.example.com');
   });
 
   it('returns true when a TXT record value is exactly "true"', async () => {

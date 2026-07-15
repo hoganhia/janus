@@ -14,6 +14,7 @@ export interface ScanFinding {
   label: string;
   status: ScanCheckStatus;
   explanation: string;
+  recommendation?: string;
   details?: Record<string, unknown>;
 }
 

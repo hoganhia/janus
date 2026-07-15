@@ -66,6 +66,8 @@ export async function evaluateDkim(
     label: 'DKIM record',
     status: 'warning',
     explanation: `No DKIM record was found for ${domain} under any of the ${String(selectors.length)} commonly used selector names checked (${selectors.join(', ')}). This does not necessarily mean DKIM isn't configured — the real selector name can't be discovered passively without a signed email or the domain's mail configuration.`,
+    recommendation:
+      'If your mail provider supports DKIM (most do), enable it and publish the resulting selector TXT record — this significantly improves deliverability and works alongside SPF/DMARC.',
     details: { selectorsChecked: [...selectors], lookupErrors },
   };
 }

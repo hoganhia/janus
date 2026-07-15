@@ -33,24 +33,33 @@ export function parseSetCookieHeader(raw: string): ParsedCookie {
 
 export function evaluateCookie(cookie: ParsedCookie, isHttps: boolean): ScanFinding {
   const issues: string[] = [];
+  const fixes: string[] = [];
   let status: ScanCheckStatus = 'pass';
 
   // SameSite=None without Secure is invalid per spec — browsers reject the cookie outright,
   // so this is worse than a missing-Secure warning: the cookie may simply not work.
   if (cookie.sameSite === 'None' && !cookie.secure) {
     issues.push('sets SameSite=None without Secure, which browsers will reject entirely');
+    fixes.push('add the Secure flag (required whenever SameSite=None is used)');
     status = 'fail';
   } else if (isHttps && !cookie.secure) {
     issues.push('is missing the Secure flag, so it could be sent over an unencrypted connection');
+    fixes.push('add the Secure flag');
     status = 'fail';
   }
 
   if (!cookie.httpOnly) {
     issues.push('is missing the HttpOnly flag, so JavaScript on the page can read it');
+    fixes.push(
+      'add the HttpOnly flag unless client-side JavaScript genuinely needs to read this cookie',
+    );
     if (status === 'pass') status = 'warning';
   }
   if (cookie.sameSite === undefined) {
     issues.push('does not set SameSite, relying on the browser default');
+    fixes.push(
+      'set SameSite explicitly (Lax or Strict, unless the cookie is intentionally used cross-site)',
+    );
     if (status === 'pass') status = 'warning';
   }
 
@@ -64,6 +73,7 @@ export function evaluateCookie(cookie: ParsedCookie, isHttps: boolean): ScanFind
     label: `Cookie: ${cookie.name}`,
     status,
     explanation,
+    ...(fixes.length > 0 ? { recommendation: `For this cookie: ${fixes.join('; ')}.` } : {}),
     details: {
       secure: cookie.secure,
       httpOnly: cookie.httpOnly,

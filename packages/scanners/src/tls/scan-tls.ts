@@ -69,6 +69,8 @@ function buildCertificateFindings(
         label: 'Certificate presented',
         status: 'fail',
         explanation: 'The server did not present a TLS certificate.',
+        recommendation:
+          "Install a TLS certificate on this endpoint (e.g. a free one from Let's Encrypt) and confirm the server presents it on every HTTPS connection.",
       },
     ];
   }
@@ -84,6 +86,8 @@ function buildCertificateFindings(
       label: 'Certificate validity dates',
       status: 'warning',
       explanation: 'The certificate validity dates could not be read.',
+      recommendation:
+        'Re-issue the certificate from a standard certificate authority and confirm it presents readable, standard validity dates.',
     });
   } else if (now < validFrom) {
     findings.push({
@@ -91,6 +95,8 @@ function buildCertificateFindings(
       label: 'Certificate validity dates',
       status: 'fail',
       explanation: `This certificate is not valid yet — it doesn't take effect until ${cert.valid_from}.`,
+      recommendation:
+        'Check the server clock and certificate issuance date — either re-issue the certificate or wait until its start date to serve it.',
     });
   } else if (now > validTo) {
     findings.push({
@@ -98,6 +104,8 @@ function buildCertificateFindings(
       label: 'Certificate validity dates',
       status: 'fail',
       explanation: `This certificate expired on ${cert.valid_to}. Visitors will see security warnings in their browser.`,
+      recommendation:
+        'Renew the TLS certificate immediately — most CAs (and tools like certbot) support auto-renewal to prevent this from recurring.',
     });
   } else if (validTo - now < CERT_EXPIRY_WARNING_WINDOW_MS) {
     const daysLeft = Math.ceil((validTo - now) / (24 * 60 * 60 * 1000));
@@ -106,6 +114,8 @@ function buildCertificateFindings(
       label: 'Certificate validity dates',
       status: 'warning',
       explanation: `This certificate is valid but expires soon — in about ${String(daysLeft)} day(s), on ${cert.valid_to}.`,
+      recommendation:
+        'Renew the certificate now, and set up auto-renewal (e.g. certbot) so it does not lapse.',
     });
   } else {
     findings.push({
@@ -124,6 +134,12 @@ function buildCertificateFindings(
     explanation: selfSigned
       ? 'This certificate is self-signed rather than issued by a recognized certificate authority, so most browsers will show visitors a security warning.'
       : 'This certificate was issued by a certificate authority rather than self-signed.',
+    ...(selfSigned
+      ? {
+          recommendation:
+            "Replace the self-signed certificate with one from a publicly trusted CA (e.g. Let's Encrypt, which is free) so browsers trust it automatically.",
+        }
+      : {}),
   });
 
   if (!selfSigned) {
@@ -135,6 +151,12 @@ function buildCertificateFindings(
       explanation: authorizationErrorCode
         ? `This certificate was issued by ${issuerName}, but it failed trust validation (${authorizationErrorCode}).`
         : `This certificate was issued by a trusted certificate authority: ${issuerName}.`,
+      ...(authorizationErrorCode
+        ? {
+            recommendation:
+              'Check the certificate chain is complete (including any intermediate certificates) and re-issue from a trusted CA if the chain is broken or the issuer is not widely trusted.',
+          }
+        : {}),
       details: { issuer: issuerName },
     });
   }
@@ -151,6 +173,12 @@ function buildCipherFinding(cipher: CipherNameAndProtocol): ScanFinding {
     explanation: weak
       ? `The connection negotiated a weak cipher suite (${cipher.name}), which is considered insecure by modern standards.`
       : `The connection negotiated a strong cipher suite (${cipher.name}).`,
+    ...(weak
+      ? {
+          recommendation:
+            'Disable weak/legacy cipher suites in your server or load balancer TLS config, and restrict negotiation to modern AEAD ciphers (e.g. AES-GCM, ChaCha20-Poly1305).',
+        }
+      : {}),
     details: { cipher: cipher.name, protocol: cipher.version },
   };
 }
@@ -176,6 +204,12 @@ async function buildTlsVersionFindings(
       enabledOutdated.length > 0
         ? `This server still accepts outdated, insecure protocol versions: ${enabledOutdated.join(', ')}. These have known weaknesses and should be disabled.`
         : 'This server did not accept connections using outdated TLS 1.0 or 1.1 during this scan.',
+    ...(enabledOutdated.length > 0
+      ? {
+          recommendation:
+            'Disable TLS 1.0 and 1.1 in your server or load balancer config, requiring TLS 1.2 or higher for all connections.',
+        }
+      : {}),
     details: {
       note: 'A scan environment that cannot itself offer TLS 1.0/1.1 as a client would also show as "not accepted" here, indistinguishable from the server genuinely rejecting them — this check is not a substitute for a dedicated legacy-protocol audit.',
       tlsV1: supported.get('TLSv1') ?? false,
@@ -191,6 +225,12 @@ async function buildTlsVersionFindings(
     explanation: supportsModern
       ? `This server supports a modern, secure TLS version (${supported.get('TLSv1.3') === true ? 'TLS 1.3' : 'TLS 1.2'}).`
       : 'This server does not appear to support TLS 1.2 or 1.3, which are required for a secure connection today.',
+    ...(supportsModern
+      ? {}
+      : {
+          recommendation:
+            'Enable TLS 1.2 and/or 1.3 on this server — most modern web servers and load balancers support this with a config change and no downtime.',
+        }),
   };
 
   return [outdatedFinding, modernFinding];
@@ -212,6 +252,12 @@ function buildHstsFinding(hstsHeaderPresent: boolean | undefined): ScanFinding {
     explanation: hstsHeaderPresent
       ? 'This site sends the Strict-Transport-Security header, telling browsers to always use HTTPS for it.'
       : 'This site does not send a Strict-Transport-Security header, so browsers may still allow insecure HTTP connections to it.',
+    ...(hstsHeaderPresent
+      ? {}
+      : {
+          recommendation:
+            'Add a Strict-Transport-Security response header (e.g. `Strict-Transport-Security: max-age=31536000; includeSubDomains`) to force HTTPS for future visits.',
+        }),
   };
 }
 
@@ -231,6 +277,8 @@ function connectionFailureResult(
         label: 'TLS connection',
         status: 'fail',
         explanation: `Could not establish a secure connection to ${hostname}:${String(port)}. The site may be down, blocking scans, or not serving HTTPS on this port.`,
+        recommendation:
+          'Confirm the server is reachable on port 443 and is serving HTTPS there — check for a firewall, load balancer, or DNS misconfiguration blocking external connections.',
         details: { error: err instanceof Error ? err.message : String(err) },
       },
     ],

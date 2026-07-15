@@ -5,7 +5,7 @@ import { LegalReviewBanner } from '@/components/legal-review-banner';
 import { LegalVersionBadge } from '@/components/legal-version-badge';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Perimeter',
+  title: 'Terms of Service — Janus',
 };
 
 export default function TermsPage() {
@@ -32,7 +32,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-foreground font-medium">1. Acceptance of terms</h2>
           <p className="mt-2">
-            [PLACEHOLDER — REQUIRES LEGAL REVIEW] By using Perimeter, you agree to these Terms of
+            [PLACEHOLDER — REQUIRES LEGAL REVIEW] By using Janus, you agree to these Terms of
             Service, the Acceptable Use Policy, and the Privacy Policy. If you do not agree, do not
             use the service.
           </p>
@@ -41,10 +41,10 @@ export default function TermsPage() {
         <section>
           <h2 className="text-foreground font-medium">2. Description of service</h2>
           <p className="mt-2">
-            [PLACEHOLDER — REQUIRES LEGAL REVIEW] Perimeter performs passive, read-only checks
-            against publicly reachable endpoints of a domain you submit (TLS configuration, HTTP
-            response headers, DNS records, and publicly visible software identifiers) and produces a
-            scored report. See /methodology for what is and is not checked.
+            [PLACEHOLDER — REQUIRES LEGAL REVIEW] Janus performs passive, read-only checks against
+            publicly reachable endpoints of a domain you submit (TLS configuration, HTTP response
+            headers, DNS records, and publicly visible software identifiers) and produces a scored
+            report. See /methodology for what is and is not checked.
           </p>
         </section>
 

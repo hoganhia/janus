@@ -5,7 +5,7 @@ import { LegalReviewBanner } from '@/components/legal-review-banner';
 import { LegalVersionBadge } from '@/components/legal-version-badge';
 
 export const metadata: Metadata = {
-  title: 'Acceptable Use Policy — Perimeter',
+  title: 'Acceptable Use Policy — Janus',
 };
 
 export default function AcceptableUsePage() {
@@ -49,8 +49,8 @@ export default function AcceptableUsePage() {
             </li>
             <li>
               [PLACEHOLDER — REQUIRES LEGAL REVIEW] Attempting to circumvent a domain&apos;s opt-out
-              signal (the <code className="bg-card rounded px-1 py-0.5">_perimeter-opt-out</code>{' '}
-              DNS TXT record) or rate limits.
+              signal (the <code className="bg-card rounded px-1 py-0.5">_janus-opt-out</code> DNS
+              TXT record) or rate limits.
             </li>
             <li>
               [PLACEHOLDER — REQUIRES LEGAL REVIEW] Using scan results to harass, extort, or

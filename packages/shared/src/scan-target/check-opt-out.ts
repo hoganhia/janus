@@ -6,7 +6,7 @@ import dns from 'node:dns';
 // waiting out Node's own retry schedule.
 const DEFAULT_TIMEOUT_MS = 5000;
 
-const OPT_OUT_LABEL_PREFIX = '_perimeter-opt-out.';
+const OPT_OUT_LABEL_PREFIX = '_janus-opt-out.';
 
 export interface CheckOptOutOptions {
   timeoutMs?: number;
@@ -14,7 +14,7 @@ export interface CheckOptOutOptions {
 
 /**
  * Robots.txt-style self-service opt-out: any site owner can add
- * `_perimeter-opt-out.<their-domain> TXT "true"` to their own DNS zone to block future scans,
+ * `_janus-opt-out.<their-domain> TXT "true"` to their own DNS zone to block future scans,
  * without needing to contact us or prove ownership through the verification flow (see
  * packages/scanners/src/domain-verification for that separate, stronger mechanism). Fails open
  * (returns false, i.e. "not opted out") on any DNS error or timeout — a resolver hiccup or a

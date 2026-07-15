@@ -48,7 +48,7 @@ export function ScanConsole() {
         <span className="size-2.5 rounded-full bg-[#ff5c5c]/70" />
         <span className="size-2.5 rounded-full bg-[#ffb84d]/70" />
         <span className="size-2.5 rounded-full bg-[#32cd32]/70" />
-        <span className="text-muted-foreground ml-2 font-mono text-xs">scan.perimeter.sh</span>
+        <span className="text-muted-foreground ml-2 font-mono text-xs">scan.janus.sh</span>
       </div>
 
       <form onSubmit={(event) => void handleSubmit(event)} className="p-5">

@@ -18,7 +18,7 @@ export interface ValidateScanTargetOptions {
   /** Sent on every probe request made while resolving redirects, so scanned sites can identify our traffic. */
   userAgent?: string;
   /**
-   * Skips the `_perimeter-opt-out.<hostname>` DNS TXT check (see check-opt-out.ts) — set this
+   * Skips the `_janus-opt-out.<hostname>` DNS TXT check (see check-opt-out.ts) — set this
    * when the caller has already confirmed the target domain's owner initiated (or otherwise
    * consented to) this specific scan, e.g. a domain with `scanTier === 'AUTHENTICATED'` via the
    * ownership verification flow. Default: false (the opt-out record is honored).
@@ -102,7 +102,7 @@ async function validateHop(
 
 /**
  * The single gate every scanner must pass a target through before connecting to it. Validates
- * URL shape, blocked hostnames, the allow/deny list, the `_perimeter-opt-out` DNS TXT record
+ * URL shape, blocked hostnames, the allow/deny list, the `_janus-opt-out` DNS TXT record
  * (see check-opt-out.ts), and that the target resolves to a public address — then makes a real
  * (redirect-disabled) probe request over a socket pinned to that validated address, following
  * any redirect chain manually and re-running every check (including the opt-out record) against

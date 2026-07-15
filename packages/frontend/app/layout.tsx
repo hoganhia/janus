@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Perimeter // external security scan',
+  title: 'Janus // external security scan',
   description:
     'See what the internet already sees about your site — passive, read-only, takes ~20 seconds.',
 };

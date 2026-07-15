@@ -105,7 +105,7 @@ export const scanRoutes: FastifyPluginCallbackZod<ScanRoutesOptions> = (app, opt
       }
       const targetUrl = parsed.data;
 
-      // The `_perimeter-opt-out` DNS TXT check (see validateScanTarget/check-opt-out.ts) is
+      // The `_janus-opt-out` DNS TXT check (see validateScanTarget/check-opt-out.ts) is
       // skipped only when the target domain's owner has proven ownership through the
       // verification flow (AUTHENTICATED scanTier) — that's the "initiated by its own verified
       // owner" carve-out. Every anonymous/unverified scan target must still honor the record.

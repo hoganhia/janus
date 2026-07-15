@@ -24,7 +24,7 @@ const abuseReportResponseSchema = z.object({
 /**
  * Public, unauthenticated by design — same reasoning as scan submission (see scans.ts): someone
  * reporting a problem with this scanner shouldn't need an account to do it. Complements the
- * self-service `_perimeter-opt-out` DNS TXT record (see check-opt-out.ts): that record stops
+ * self-service `_janus-opt-out` DNS TXT record (see check-opt-out.ts): that record stops
  * *future* scans immediately without any human involvement, while this is a manual-review
  * channel for anyone who can't add DNS records, wants to flag a problem retroactively, or has a
  * concern that isn't just "stop scanning me" (e.g. request volume, a specific bad interaction).

@@ -13,7 +13,7 @@ export interface ScanHeadersOptions {
   requesterIp: string;
   /**
    * Identifies this request as an automated security scan, e.g.
-   * `"PerimeterSecurityScanner/1.0 (+https://example.com/about-this-scanner)"`. Required, with no
+   * `"JanusSecurityScanner/1.0 (+https://example.com/about-this-scanner)"`. Required, with no
    * built-in default — a placeholder domain would be actively misleading if it ever shipped
    * un-customized. The linked page should explain what the scan is and how to opt out.
    */
@@ -51,6 +51,8 @@ function connectionFailureResult(url: string, scannedAt: string, err: unknown): 
           reason !== undefined
             ? `Could not fetch headers from ${url}: the target failed validation (${reason}).`
             : `Could not fetch headers from ${url}. The site may be down, blocking scans, or unreachable.`,
+        recommendation:
+          'Confirm the server responds to standard HTTP(S) requests from external clients — check for a firewall, load balancer, or DNS issue blocking access.',
         details: { error: err instanceof Error ? err.message : String(err) },
       },
     ],

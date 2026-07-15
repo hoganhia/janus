@@ -218,7 +218,7 @@ describe('validateScanTarget', () => {
         }),
       );
       expect(reason).toBe('OPTED_OUT');
-      expect(mockResolveTxt).toHaveBeenCalledWith('_perimeter-opt-out.opted-out.example');
+      expect(mockResolveTxt).toHaveBeenCalledWith('_janus-opt-out.opted-out.example');
       expect(mockProbePinned).not.toHaveBeenCalled();
     });
 
@@ -268,10 +268,7 @@ describe('validateScanTarget', () => {
       );
 
       expect(reason).toBe('OPTED_OUT');
-      expect(mockResolveTxt).toHaveBeenNthCalledWith(
-        2,
-        '_perimeter-opt-out.opted-out-target.example',
-      );
+      expect(mockResolveTxt).toHaveBeenNthCalledWith(2, '_janus-opt-out.opted-out-target.example');
     });
   });
 

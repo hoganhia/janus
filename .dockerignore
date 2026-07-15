@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+packages/frontend
+.git
+.github
+.claude
+*.md
+.env
+.env.local
+docker-compose.yml

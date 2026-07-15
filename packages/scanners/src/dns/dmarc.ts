@@ -42,6 +42,7 @@ export async function evaluateDmarc(domain: string): Promise<ScanFinding> {
       label: 'DMARC record',
       status: 'fail',
       explanation: `${domain} does not have a DMARC record, so it has no policy telling mail providers what to do with messages that fail SPF or DKIM checks.`,
+      recommendation: `Add a TXT record at _dmarc.${domain}, starting with a monitoring-only policy to be safe, e.g. \`v=DMARC1; p=none; rua=mailto:you@${domain}\`, then move to p=quarantine or p=reject once you've reviewed reports.`,
     };
   }
 
@@ -54,6 +55,7 @@ export async function evaluateDmarc(domain: string): Promise<ScanFinding> {
 
   let status: ScanCheckStatus;
   let policyDescription: string;
+  let recommendation: string | undefined;
   if (policy === 'reject') {
     status = 'pass';
     policyDescription = 'reject (the strictest policy — non-compliant mail is blocked)';
@@ -63,13 +65,18 @@ export async function evaluateDmarc(domain: string): Promise<ScanFinding> {
   } else if (policy === 'none') {
     status = 'warning';
     policyDescription = 'none (monitoring only — messages that fail checks are still delivered)';
+    recommendation =
+      'Once you have reviewed DMARC reports and confirmed legitimate mail passes, move the policy to p=quarantine or p=reject.';
   } else {
     status = 'fail';
     policyDescription = `an unrecognized or missing value ("${policy ?? ''}")`;
+    recommendation = 'Set the DMARC record\'s "p" tag to one of: none, quarantine, or reject.';
   }
 
   if (pctIsPartial && status === 'pass') {
     status = 'warning';
+    recommendation =
+      'Increase pct to 100 once you are confident the policy is not causing false positives.';
   }
 
   const pctNote = pctIsPartial ? ` (applied to only ${String(pct)}% of messages)` : '';
@@ -79,6 +86,7 @@ export async function evaluateDmarc(domain: string): Promise<ScanFinding> {
     label: 'DMARC record',
     status,
     explanation: `${domain} has a DMARC record with policy ${policyDescription}${pctNote}.`,
+    ...(recommendation !== undefined ? { recommendation } : {}),
     details: { record, policy: policy ?? null, pct },
   };
 }

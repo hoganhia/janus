@@ -50,6 +50,7 @@ export async function evaluateSpf(domain: string): Promise<ScanFinding> {
       label: 'SPF record',
       status: 'fail',
       explanation: `${domain} does not have an SPF record, so nothing tells receiving mail servers which servers are allowed to send email as this domain.`,
+      recommendation: `Add a TXT record to ${domain} listing your legitimate mail servers, ending in "-all", e.g. \`v=spf1 include:_spf.yourprovider.com -all\`.`,
     };
   }
 
@@ -59,6 +60,8 @@ export async function evaluateSpf(domain: string): Promise<ScanFinding> {
       label: 'SPF record',
       status: 'fail',
       explanation: `${domain} has ${String(spfRecords.length)} SPF records. Having more than one is invalid under the SPF specification, and mail servers may reject or ignore all of them.`,
+      recommendation:
+        'Merge the multiple SPF records into a single TXT record — SPF only allows one per domain.',
       details: { records: spfRecords },
     };
   }
@@ -68,27 +71,35 @@ export async function evaluateSpf(domain: string): Promise<ScanFinding> {
   const lookupCount = countLookupMechanisms(record);
 
   const issues: string[] = [];
+  const fixes: string[] = [];
   let status: ScanCheckStatus = 'pass';
 
   if (allQualifier === undefined) {
     issues.push(
       'does not end with an "all" mechanism, leaving its policy for unlisted senders undefined',
     );
+    fixes.push('add "-all" to the end of the record');
     status = 'warning';
   } else if (allQualifier === '+') {
     issues.push('ends with "+all", which explicitly allows any server to send mail as this domain');
+    fixes.push('change "+all" to "-all" (hard fail) — "+all" defeats the purpose of SPF');
     status = 'fail';
   } else if (allQualifier === '?') {
     issues.push('ends with "?all" (neutral), which provides no real enforcement');
+    fixes.push('change "?all" to "-all" (hard fail) for real enforcement');
     status = 'warning';
   } else if (allQualifier === '~') {
     issues.push('ends with "~all" (soft fail) rather than the stricter "-all" (hard fail)');
+    fixes.push('change "~all" to "-all" once you are confident all legitimate senders are listed');
     status = 'warning';
   }
 
   if (lookupCount > SPF_LOOKUP_LIMIT) {
     issues.push(
       `appears to require more than ${String(SPF_LOOKUP_LIMIT)} DNS lookups to evaluate (counting only this record, not mechanisms nested inside "include:" chains), which risks a PermError under the SPF specification`,
+    );
+    fixes.push(
+      'reduce the number of "include:"/"a"/"mx"/"ptr"/"exists" mechanisms, or flatten some includes into static IP ranges',
     );
     status = 'fail';
   }
@@ -101,6 +112,7 @@ export async function evaluateSpf(domain: string): Promise<ScanFinding> {
       issues.length === 0
         ? `${domain} has a valid SPF record ending in "-all" (hard fail).`
         : `${domain} has an SPF record, but it ${issues.join('; and it ')}.`,
+    ...(fixes.length > 0 ? { recommendation: fixes.join('; ') + '.' } : {}),
     details: { record, lookupCount },
   };
 }

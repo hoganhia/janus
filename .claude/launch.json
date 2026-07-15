@@ -6,7 +6,7 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": [
         "-c",
-        "export NODE_ENV=development PORT=3000 HOST=0.0.0.0 LOG_LEVEL=info RATE_LIMIT_MAX=100 RATE_LIMIT_TIME_WINDOW_MS=60000 DATABASE_URL='postgresql://janus:janus@localhost:5433/janus' REDIS_URL='redis://localhost:6379' SCANNER_USER_AGENT='PerimeterSecurityScanner/1.0 (+https://example.com/about-this-scanner)' CLERK_SECRET_KEY=sk_test_placeholder_replace_with_real_clerk_secret_key CLERK_PUBLISHABLE_KEY=pk_test_cGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA== CORS_ALLOWED_ORIGINS='http://localhost:3001'; exec sh /usr/local/lib/node_modules/corepack/shims/pnpm --filter @janus/api dev"
+        "export NODE_ENV=development PORT=3000 HOST=0.0.0.0 LOG_LEVEL=info RATE_LIMIT_MAX=100 RATE_LIMIT_TIME_WINDOW_MS=60000 DATABASE_URL='postgresql://janus:janus@localhost:5433/janus' REDIS_URL='redis://localhost:6379' SCANNER_USER_AGENT='JanusSecurityScanner/1.0 (+https://example.com/about-this-scanner)' CLERK_SECRET_KEY=sk_test_placeholder_replace_with_real_clerk_secret_key CLERK_PUBLISHABLE_KEY=pk_test_cGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA== CORS_ALLOWED_ORIGINS='http://localhost:3001'; exec sh /usr/local/lib/node_modules/corepack/shims/pnpm --filter @janus/api dev"
       ],
       "port": 3000
     },

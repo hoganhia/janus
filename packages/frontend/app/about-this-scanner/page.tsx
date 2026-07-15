@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { AbuseReportForm } from '@/components/abuse-report-form';
 
 export const metadata: Metadata = {
-  title: 'About this scanner — Perimeter',
+  title: 'About this scanner — Janus',
 };
 
 const WHAT_WE_CHECK = [
@@ -35,7 +35,7 @@ export default function AboutThisScannerPage() {
 
       <h1 className="text-2xl font-semibold tracking-tight">About this scanner</h1>
       <p className="text-muted-foreground mt-3 leading-relaxed">
-        Perimeter is a passive external scanner. This page explains exactly what it does, what it
+        Janus is a passive external scanner. This page explains exactly what it does, what it
         deliberately does not do, how often it makes requests, and how to opt out or block it if
         you&apos;d rather it left your domain alone.
       </p>
@@ -70,7 +70,7 @@ export default function AboutThisScannerPage() {
         refused before we make any request to it:
       </p>
       <pre className="border-border bg-card mt-3 overflow-x-auto rounded-lg border p-3 font-mono text-xs">
-        _perimeter-opt-out.yourdomain.com. TXT &quot;true&quot;
+        _janus-opt-out.yourdomain.com. TXT &quot;true&quot;
       </pre>
       <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
         This is checked fresh on every scan attempt (including redirects, at each hop), so it takes
@@ -85,7 +85,7 @@ export default function AboutThisScannerPage() {
         <code className="bg-card rounded px-1 py-0.5 text-xs">User-Agent</code> header — by default
         something like{' '}
         <code className="bg-card rounded px-1 py-0.5 text-xs">
-          PerimeterSecurityScanner/1.0 (+https://.../about-this-scanner)
+          JanusSecurityScanner/1.0 (+https://.../about-this-scanner)
         </code>{' '}
         — that always links back to a page like this one. You can block or rate-limit it in your
         WAF, a robots.txt-style user-agent rule, or a firewall rule matching that string, in

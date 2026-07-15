@@ -1,4 +1,4 @@
-import { Check, TriangleAlert, X } from 'lucide-react';
+import { Check, TriangleAlert, Wrench, X } from 'lucide-react';
 import type { ScanFinding } from '@/lib/types';
 
 const STATUS_META = {
@@ -23,6 +23,12 @@ export function FindingRow({ finding }: { finding: ScanFinding }) {
           </span>
         </div>
         <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{finding.explanation}</p>
+        {finding.recommendation !== undefined && (
+          <div className="border-border bg-secondary/40 mt-2 flex items-start gap-2 rounded-md border px-2.5 py-2">
+            <Wrench className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
+            <p className="text-foreground text-sm leading-relaxed">{finding.recommendation}</p>
+          </div>
+        )}
       </div>
     </div>
   );

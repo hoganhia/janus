@@ -65,6 +65,8 @@ export async function evaluateDnssec(domain: string): Promise<ScanFinding> {
       label: 'DNSSEC',
       status: 'warning',
       explanation: `${domain} publishes DNSKEY records but has no DS record in its parent zone, so the chain of trust is incomplete — resolvers won't treat it as DNSSEC-validated.`,
+      recommendation:
+        'Submit the DS record for your DNSKEY to your domain registrar to complete the chain of trust — most registrars have a DNSSEC/DS-record form for this.',
       details: { hasDs, hasDnskey },
     };
   }
@@ -74,6 +76,8 @@ export async function evaluateDnssec(domain: string): Promise<ScanFinding> {
     label: 'DNSSEC',
     status: 'fail',
     explanation: `${domain} has no DS or DNSKEY records — DNSSEC does not appear to be enabled. (This checks for record presence only, not full cryptographic signature validation.)`,
+    recommendation:
+      'Enable DNSSEC signing in your DNS provider, then submit the resulting DS record to your domain registrar.',
     details: { hasDs, hasDnskey },
   };
 }

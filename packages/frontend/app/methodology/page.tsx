@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Disclaimer } from '@/components/disclaimer';
 
 export const metadata: Metadata = {
-  title: 'Methodology — Perimeter',
+  title: 'Methodology — Janus',
 };
 
 const CATEGORIES = [
@@ -43,7 +43,7 @@ export default function MethodologyPage() {
 
       <h1 className="text-2xl font-semibold tracking-tight">Methodology</h1>
       <p className="text-muted-foreground mt-3 leading-relaxed">
-        Perimeter runs a small set of passive, read-only checks against the public-facing side of a
+        Janus runs a small set of passive, read-only checks against the public-facing side of a
         domain — the same information any visitor&apos;s browser or any DNS resolver can already
         see. Nothing here requires credentials, and nothing here writes to or modifies the target in
         any way.
