@@ -21,14 +21,14 @@
     "audit": "pnpm audit --audit-level=moderate"
   },
   "devDependencies": {
-    "@eslint/js": "^9.18.0",
-    "@types/node": "^22.10.5",
-    "eslint": "^9.18.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-security": "^3.0.1",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0",
+    "eslint-plugin-security": "^4.0.1",
+    "prettier": "^3.9.5",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.64.0",
     "vitest": "^4.1.10"
   }
 }
