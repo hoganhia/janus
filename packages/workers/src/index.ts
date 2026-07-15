@@ -14,6 +14,9 @@
  * `domain-verification-expiry/` runs daily, downgrading any domain whose successful ownership
  * verification (packages/scanners/src/domain-verification) has passed its 90-day expiry back to
  * the PASSIVE scan tier.
+ *
+ * `data-retention/` runs daily, deleting scan records and consent/IP-log records older than
+ * RETENTION_MONTHS (see @janus/shared, default 12) — Prompt 9's data-retention requirement.
  */
 export {
   createScanQueue,
@@ -56,3 +59,16 @@ export {
   expireStaleDomainVerifications,
   type ExpireDomainVerificationsResult,
 } from './domain-verification-expiry/expire-domains.js';
+export {
+  createDataRetentionQueue,
+  createDataRetentionWorker,
+  scheduleDataRetentionSweep,
+  type DataRetentionJobData,
+  type DataRetentionJobResult,
+  type DataRetentionQueueOptions,
+  type DataRetentionWorkerOptions,
+} from './data-retention/queue.js';
+export {
+  runDataRetentionSweep,
+  type RunDataRetentionSweepResult,
+} from './data-retention/run-retention-sweep.js';

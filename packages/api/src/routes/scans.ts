@@ -1,4 +1,4 @@
-import { findDomainByName } from '@janus/db';
+import { findDomainByName, recordScanConsent } from '@janus/db';
 import { enqueueScanJob, type ScanJobData, type ScanQueueLike } from '@janus/workers';
 import { ScanTargetRejectedError, targetUrlSchema, validateScanTarget } from '@janus/shared';
 import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
@@ -33,6 +33,15 @@ const IP_RATE_LIMIT_TIME_WINDOW_MS = 60 * 60 * 1000;
 
 const createScanBodySchema = z.object({
   targetUrl: z.string().min(1),
+  /**
+   * "I own this domain or have authorization to assess it" — required on every submission (see
+   * Prompt 9). There's only one functional scan tier today (the passive checks every scan
+   * runs), so this isn't gated to some "deeper" tier that doesn't exist yet; it applies
+   * universally. A bare `true`/`false` mismatch or missing field both fail schema validation
+   * (surfaced as the generic 400 from registerErrorHandler, same as any other validation
+   * failure) — there's no partial-credit "attested but didn't mean it" state.
+   */
+  attestation: z.literal(true),
 });
 
 const createScanResponseSchema = z.object({
@@ -129,6 +138,17 @@ export const scanRoutes: FastifyPluginCallbackZod<ScanRoutesOptions> = (app, opt
         }
         throw err;
       }
+
+      // The attestation audit trail — see ScanConsent's doc comment in schema.prisma. Recorded
+      // only for a target that actually passed validation and is about to be enqueued, not for
+      // a rejected attempt: this table is "who attested to scanning what, and it happened," not
+      // a log of every malformed/bad-actor request (pino's own request logging already covers
+      // that).
+      await recordScanConsent({
+        userId: null,
+        requesterIp: request.ip,
+        targetDomain: new URL(targetUrl).hostname,
+      });
 
       const jobData: ScanJobData = {
         targetUrl,

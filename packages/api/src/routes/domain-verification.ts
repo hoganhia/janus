@@ -14,6 +14,7 @@ import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
 // See the comment in ../schemas.ts on why this is 'zod/v4' rather than the classic 'zod' import.
 import { z } from 'zod/v4';
 import { requireAuth } from '../plugins/auth.js';
+import { requireLegalAcceptance } from '../plugins/legal.js';
 import {
   domainParamSchema,
   domainVerificationMethodSchema,
@@ -78,7 +79,11 @@ export const domainVerificationRoutes: FastifyPluginCallbackZod<DomainVerificati
   app.post(
     '/domains/:domain/verification',
     {
-      preHandler: [requireAuth],
+      // requireLegalAcceptance must run after requireAuth — it reads request.authUserId, which
+      // requireAuth sets. See requireLegalAcceptance's own doc comment for why this is where
+      // ToS/AUP acceptance is enforced, rather than at some dedicated "signup" step this app
+      // doesn't have.
+      preHandler: [requireAuth, requireLegalAcceptance],
       config: {
         rateLimit: {
           max: VERIFICATION_RATE_LIMIT_MAX,
@@ -93,6 +98,7 @@ export const domainVerificationRoutes: FastifyPluginCallbackZod<DomainVerificati
         response: {
           200: startVerificationResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           429: errorResponseSchema,
         },
       },

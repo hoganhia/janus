@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ export function ScanConsole() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const { jobId } = await createScan(normalized);
+      const { jobId } = await createScan(normalized, attested);
       router.push(`/scan/${jobId}?target=${encodeURIComponent(normalized)}`);
     } catch (err) {
       setError(
@@ -96,7 +97,11 @@ export function ScanConsole() {
             className="mt-0.5"
           />
           <span className="text-muted-foreground">
-            I own this domain or have authorization to assess it.
+            I own this domain or have authorization to assess it, per the{' '}
+            <Link href="/acceptable-use" className="underline underline-offset-2">
+              Acceptable Use Policy
+            </Link>
+            .
           </span>
         </label>
       </form>

@@ -38,3 +38,8 @@ export const domainVerificationStatusSchema = z.enum([
 ]);
 export const domainVerificationMethodSchema = z.enum(['DNS_TXT', 'WELL_KNOWN_FILE']);
 export const scanTierSchema = z.enum(['PASSIVE', 'AUTHENTICATED']);
+export const legalDocumentTypeSchema = z.enum([
+  'TERMS_OF_SERVICE',
+  'PRIVACY_POLICY',
+  'ACCEPTABLE_USE_POLICY',
+]);

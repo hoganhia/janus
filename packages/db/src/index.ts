@@ -28,6 +28,18 @@ export {
   type MarkDomainVerifiedInput,
 } from './domain-verification-repository.js';
 export { createAbuseReport, type CreateAbuseReportInput } from './abuse-report-repository.js';
+export {
+  getCurrentLegalVersion,
+  recordScanConsent,
+  recordLegalAcceptance,
+  hasAcceptedLatestLegalVersion,
+  deleteUserLegalData,
+  runRetentionSweep,
+  type RecordScanConsentInput,
+  type RecordLegalAcceptanceInput,
+  type DeleteUserLegalDataResult,
+  type RetentionSweepResult,
+} from './legal-repository.js';
 export type {
   Severity,
   LetterGrade,
@@ -37,6 +49,10 @@ export type {
   Domain,
   ScanReport,
   AbuseReport,
+  LegalDocumentType,
+  LegalVersion,
+  ScanConsent,
+  LegalAcceptance,
   PrismaClient,
   Prisma,
 } from './generated/prisma/client.js';

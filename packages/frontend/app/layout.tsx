@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { CookieConsentBanner } from '@/components/cookie-consent-banner';
+import { Footer } from '@/components/footer';
 import { Topbar } from '@/components/topbar';
 import './globals.css';
 
@@ -24,9 +26,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen antialiased`}>
+      <body
+        className={`${inter.variable} ${jetbrainsMono.variable} flex min-h-screen flex-col antialiased`}
+      >
         <Topbar />
         {children}
+        <Footer />
+        <CookieConsentBanner />
       </body>
     </html>
   );

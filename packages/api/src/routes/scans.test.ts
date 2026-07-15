@@ -1,6 +1,6 @@
 import rateLimit from '@fastify/rate-limit';
 import type { ScanJobData, ScanJobLike, ScanJobResult, ScanQueueLike } from '@janus/workers';
-import { findDomainByName, type Domain } from '@janus/db';
+import { findDomainByName, recordScanConsent, type Domain } from '@janus/db';
 import { validateScanTarget } from '@janus/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
@@ -14,11 +14,12 @@ vi.mock('@janus/shared', async (importOriginal) => {
 
 vi.mock('@janus/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@janus/db')>();
-  return { ...actual, findDomainByName: vi.fn() };
+  return { ...actual, findDomainByName: vi.fn(), recordScanConsent: vi.fn() };
 });
 
 const mockValidate = vi.mocked(validateScanTarget);
 const mockFindDomainByName = vi.mocked(findDomainByName);
+const mockRecordScanConsent = vi.mocked(recordScanConsent);
 
 const SCANNER_USER_AGENT = 'JanusSecurityScanner/1.0 (+https://example.com/about-scans)';
 
@@ -87,7 +88,7 @@ describe('scanRoutes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://example.com/' },
+        payload: { targetUrl: 'https://example.com/', attestation: true },
       });
 
       expect(response.statusCode).toBe(202);
@@ -101,6 +102,60 @@ describe('scanRoutes', () => {
       });
     });
 
+    it('records a ScanConsent row for the attestation before enqueueing', async () => {
+      queue = new FakeScanQueue();
+      mockValidate.mockResolvedValue({
+        requestedUrl: 'https://example.com/',
+        finalUrl: 'https://example.com/',
+        pinnedAddress: '93.184.216.34',
+        family: 4,
+        redirectCount: 0,
+      });
+      app = await buildTestApp(queue);
+
+      await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://example.com/', attestation: true },
+      });
+
+      expect(mockRecordScanConsent).toHaveBeenCalledWith({
+        userId: null,
+        requesterIp: '127.0.0.1',
+        targetDomain: 'example.com',
+      });
+    });
+
+    it('rejects a submission missing attestation with 400, without validating, enqueueing, or recording consent', async () => {
+      queue = new FakeScanQueue();
+      app = await buildTestApp(queue);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://example.com/' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(mockValidate).not.toHaveBeenCalled();
+      expect(queue.add).not.toHaveBeenCalled();
+      expect(mockRecordScanConsent).not.toHaveBeenCalled();
+    });
+
+    it('rejects a submission with attestation: false with 400', async () => {
+      queue = new FakeScanQueue();
+      app = await buildTestApp(queue);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://example.com/', attestation: false },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+
     it('rejects a malformed URL with 400 before ever validating or enqueueing', async () => {
       queue = new FakeScanQueue();
       app = await buildTestApp(queue);
@@ -108,7 +163,7 @@ describe('scanRoutes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'not a url' },
+        payload: { targetUrl: 'not a url', attestation: true },
       });
 
       expect(response.statusCode).toBe(400);
@@ -128,11 +183,12 @@ describe('scanRoutes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://internal.example.com/' },
+        payload: { targetUrl: 'https://internal.example.com/', attestation: true },
       });
 
       expect(response.statusCode).toBe(400);
       expect(queue.add).not.toHaveBeenCalled();
+      expect(mockRecordScanConsent).not.toHaveBeenCalled();
     });
 
     it('propagates an unexpected validation error as a 500, without enqueueing', async () => {
@@ -143,7 +199,7 @@ describe('scanRoutes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://example.com/' },
+        payload: { targetUrl: 'https://example.com/', attestation: true },
       });
 
       expect(response.statusCode).toBe(500);
@@ -165,7 +221,7 @@ describe('scanRoutes', () => {
       await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://example.com/' },
+        payload: { targetUrl: 'https://example.com/', attestation: true },
       });
 
       expect(mockFindDomainByName).toHaveBeenCalledWith('example.com');
@@ -190,7 +246,7 @@ describe('scanRoutes', () => {
       await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://example.com/' },
+        payload: { targetUrl: 'https://example.com/', attestation: true },
       });
 
       expect(mockValidate).toHaveBeenCalledWith(
@@ -212,7 +268,7 @@ describe('scanRoutes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/scans',
-        payload: { targetUrl: 'https://opted-out.example.com/' },
+        payload: { targetUrl: 'https://opted-out.example.com/', attestation: true },
       });
 
       expect(response.statusCode).toBe(403);
@@ -235,7 +291,7 @@ describe('scanRoutes', () => {
         const response = await app.inject({
           method: 'POST',
           url: '/scans',
-          payload: { targetUrl: 'https://example.com/' },
+          payload: { targetUrl: 'https://example.com/', attestation: true },
         });
         statusCodes.push(response.statusCode);
       }

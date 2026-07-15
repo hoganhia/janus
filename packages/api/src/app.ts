@@ -18,6 +18,7 @@ import { abuseReportRoutes } from './routes/abuse-report.js';
 import { domainVerificationRoutes } from './routes/domain-verification.js';
 import { domainRoutes } from './routes/domains.js';
 import { healthRoutes } from './routes/health.js';
+import { legalRoutes, legalVersionsRoutes } from './routes/legal.js';
 import { scanReportRoutes } from './routes/scan-reports.js';
 import { scanRoutes } from './routes/scans.js';
 
@@ -125,6 +126,7 @@ export async function buildApp(): Promise<{
       await scoped.register(domainVerificationRoutes, {
         scannerUserAgent: config.SCANNER_USER_AGENT,
       });
+      await scoped.register(legalRoutes);
     },
     { prefix: '/api/v1' },
   );
@@ -132,6 +134,7 @@ export async function buildApp(): Promise<{
   await app.register(domainRoutes, { prefix: '/api/v1' });
   await app.register(scanReportRoutes, { prefix: '/api/v1' });
   await app.register(abuseReportRoutes, { prefix: '/api/v1' });
+  await app.register(legalVersionsRoutes, { prefix: '/api/v1' });
 
   return { app, config };
 }

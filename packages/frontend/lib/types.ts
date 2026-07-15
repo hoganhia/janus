@@ -149,3 +149,14 @@ export interface AbuseReportInput {
 export interface AbuseReportResponse {
   id: string;
 }
+
+// -- GET /legal/versions ---------------------------------------------------------------------------
+
+export type LegalDocumentType = 'TERMS_OF_SERVICE' | 'PRIVACY_POLICY' | 'ACCEPTABLE_USE_POLICY';
+
+export interface LegalVersionInfo {
+  version: string;
+  effectiveAt: string;
+}
+
+export type LegalVersionsResponse = Record<LegalDocumentType, LegalVersionInfo>;

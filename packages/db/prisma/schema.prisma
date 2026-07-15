@@ -40,9 +40,9 @@ model Cve {
 /// One row per CPE match-criteria entry a CVE lists for a product we track — a single CVE can
 /// affect several version ranges of the same product (e.g. one fixed range per branch).
 model CveAffectedProduct {
-  id     String @id @default(cuid())
-  cveId  String
-  cve    Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
+  id    String @id @default(cuid())
+  cveId String
+  cve   Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
 
   /// Our own catalog key (see product-catalog.ts), not the raw CPE string — e.g. "nginx".
   productKey String
@@ -61,10 +61,10 @@ model CveAffectedProduct {
 /// pull strategy re-queries each product's full (bounded) CVE set on every run rather than
 /// diffing incrementally — see the sync job for why that's an acceptable simplification here.
 model CveSyncState {
-  productKey    String    @id
-  lastSyncedAt  DateTime?
-  lastStatus    String?
-  lastError     String?
+  productKey   String    @id
+  lastSyncedAt DateTime?
+  lastStatus   String?
+  lastError    String?
 }
 
 enum DomainVerificationStatus {
@@ -103,21 +103,21 @@ enum ScanTier {
 /// `verificationExpiresAt` is when a successful verification stops counting — ownership proof
 /// isn't permanent, since domains change hands.
 model Domain {
-  id                     String                    @id @default(cuid())
+  id                    String                    @id @default(cuid())
   /// Stored lowercased (DNS names are case-insensitive) so "Example.com" and "example.com"
   /// can't create two rows — enforced in scan-report-repository.ts, not at the DB level, since
   /// Postgres has no case-insensitive unique constraint without a functional index.
-  domain                 String                    @unique
-  verificationStatus     DomainVerificationStatus  @default(UNVERIFIED)
-  verificationMethod     DomainVerificationMethod?
-  verificationToken      String?
-  verifiedAt             DateTime?
+  domain                String                    @unique
+  verificationStatus    DomainVerificationStatus  @default(UNVERIFIED)
+  verificationMethod    DomainVerificationMethod?
+  verificationToken     String?
+  verifiedAt            DateTime?
   /// Set to verifiedAt + 90 days on successful verification; null until the first success.
   /// Re-verifying (successfully) before this passes just pushes it forward another 90 days.
-  verificationExpiresAt  DateTime?
-  scanTier               ScanTier                  @default(PASSIVE)
-  createdAt              DateTime                  @default(now())
-  updatedAt              DateTime                  @updatedAt
+  verificationExpiresAt DateTime?
+  scanTier              ScanTier                  @default(PASSIVE)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
 
   scanReports ScanReport[]
 
@@ -181,4 +181,79 @@ model AbuseReport {
   createdAt DateTime @default(now())
 
   @@index([domain])
+}
+
+enum LegalDocumentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  ACCEPTABLE_USE_POLICY
+}
+
+/// A timestamped changelog entry for one of our legal documents — the actual document text
+/// lives in the frontend (packages/frontend/app/terms, /acceptable-use, /privacy), not here;
+/// this table exists so `LegalAcceptance`/`ScanConsent` rows can point at exactly which
+/// version was in effect when someone agreed to it or attested to scanning authorization,
+/// which is the whole point per Prompt 9: proving what a user agreed to if it's ever disputed.
+/// ALL current rows are placeholder-text versions — see LEGAL_REVIEW.md.
+model LegalVersion {
+  id           String            @id @default(cuid())
+  documentType LegalDocumentType
+  /// e.g. "1.0.0-placeholder" — free-form, not semver-enforced.
+  version      String
+  /// What changed in this version, for our own history — not shown to end users.
+  changeNote   String?
+  effectiveAt  DateTime
+  createdAt    DateTime          @default(now())
+
+  scanConsents     ScanConsent[]
+  legalAcceptances LegalAcceptance[]
+
+  @@unique([documentType, version])
+  /// Every "current version" lookup is "latest effectiveAt for this documentType" — see
+  /// getCurrentLegalVersion in packages/db/src/legal-repository.ts.
+  @@index([documentType, effectiveAt])
+}
+
+/// One row per scan submission's "I own this domain or have authorization to assess it"
+/// attestation (see POST /scans in packages/api/src/routes/scans.ts) — the audit trail if a
+/// scanned domain's owner ever disputes being scanned without authorization.
+///
+/// `userId` is deliberately nullable and, as of Prompt 9, always null: scan submission is
+/// anonymous by design (see Prompt 5/7's decision, reaffirmed in Prompt 9's scoping) — there is
+/// no Clerk session on this route, and adding one would reintroduce exactly the "a Clerk
+/// misconfiguration must not be able to take down scanning" risk that decision was built to
+/// avoid. If scan submission ever becomes account-gated, this is where that user ID would go;
+/// until then, `requesterIp` + `attestedAt` + `targetDomain` is the identifying tuple.
+model ScanConsent {
+  id           String   @id @default(cuid())
+  userId       String?
+  requesterIp  String
+  targetDomain String
+  attestedAt   DateTime @default(now())
+
+  /// The exact Acceptable Use Policy version the attestation checkbox text corresponded to at
+  /// submission time.
+  acceptableUseVersionId String
+  acceptableUseVersion   LegalVersion @relation(fields: [acceptableUseVersionId], references: [id])
+
+  @@index([targetDomain])
+  @@index([attestedAt])
+}
+
+/// One row per (user, document type, version) a user has agreed to — e.g. clicking "I agree" on
+/// the Terms of Service before starting domain-ownership verification (the only account-tied
+/// action in this app as of Prompt 9; see requireLegalAcceptance in
+/// packages/api/src/plugins/legal.ts). `userId` is the Clerk user ID — this app has no local
+/// User table, Clerk owns identity, this just records app-specific consent against that ID.
+model LegalAcceptance {
+  id             String            @id @default(cuid())
+  userId         String
+  documentType   LegalDocumentType
+  legalVersionId String
+  legalVersion   LegalVersion      @relation(fields: [legalVersionId], references: [id])
+  acceptedAt     DateTime          @default(now())
+  ipAddress      String
+
+  @@unique([userId, documentType, legalVersionId])
+  @@index([userId])
 }

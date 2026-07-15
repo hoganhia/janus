@@ -44,6 +44,13 @@ const envSchema = z.object({
    * doesn't send anything anywhere. Get one from a Sentry project's Settings > Client Keys page.
    */
   SENTRY_DSN: z.string().min(1).optional(),
+  /**
+   * How long scan records and consent/IP-log records are kept before the scheduled retention
+   * job deletes them (see packages/workers/src/data-retention) — Prompt 9's data-retention
+   * requirement. Default 12 months. Does not apply to LegalAcceptance (ToS/AUP acceptance
+   * proof needs to survive as long as the account itself does, not expire on a fixed clock).
+   */
+  RETENTION_MONTHS: z.coerce.number().int().positive().default(12),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

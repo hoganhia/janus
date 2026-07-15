@@ -6,13 +6,13 @@ Passive web security scanning application. Takes a company's public URL and runs
 
 ## Monorepo structure
 
-| Package           | Description                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| `@janus/api`      | Fastify HTTP API                                                                                  |
-| `@janus/scanners` | Passive security scanners                                                                         |
-| `@janus/workers`  | Background job workers                                                                            |
-| `@janus/shared`   | Shared types, config, Zod schemas                                                                 |
-| `@janus/db`       | Prisma/Postgres persistence, used by the API and workers                                          |
+| Package           | Description                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `@janus/api`      | Fastify HTTP API                                                                                                               |
+| `@janus/scanners` | Passive security scanners                                                                                                      |
+| `@janus/workers`  | Background job workers                                                                                                         |
+| `@janus/shared`   | Shared types, config, Zod schemas                                                                                              |
+| `@janus/db`       | Prisma/Postgres persistence, used by the API and workers                                                                       |
 | `@janus/frontend` | Next.js web UI — landing page, scan-progress polling, results, domain history trends, methodology and about-this-scanner pages |
 
 ## Prerequisites

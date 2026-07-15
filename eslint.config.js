@@ -36,6 +36,10 @@ export default tseslint.config(
       'vitest.config.ts',
       '**/prisma.config.ts',
       'packages/frontend/**',
+      // Nested git worktrees (e.g. from a spawned background session) are independent
+      // checkouts with their own (possibly absent) node_modules — ESLint's project service
+      // can't type-check them from here, and they aren't part of this workspace's source.
+      '.claude/worktrees/**',
     ],
   },
 );

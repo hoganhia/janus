@@ -4,6 +4,7 @@ import type {
   ApiErrorBody,
   CreateScanResponse,
   DomainHistoryResponse,
+  LegalVersionsResponse,
   ScanReportResponse,
   ScanStatusResponse,
 } from './types';
@@ -34,10 +35,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function createScan(targetUrl: string): Promise<CreateScanResponse> {
+export function createScan(targetUrl: string, attestation: boolean): Promise<CreateScanResponse> {
   return request<CreateScanResponse>('/scans', {
     method: 'POST',
-    body: JSON.stringify({ targetUrl }),
+    body: JSON.stringify({ targetUrl, attestation }),
   });
 }
 
@@ -59,4 +60,8 @@ export function submitAbuseReport(input: AbuseReportInput): Promise<AbuseReportR
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function getLegalVersions(): Promise<LegalVersionsResponse> {
+  return request<LegalVersionsResponse>('/legal/versions');
 }

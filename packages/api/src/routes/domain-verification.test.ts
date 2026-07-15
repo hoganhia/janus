@@ -2,6 +2,7 @@ import { getAuth } from '@clerk/fastify';
 import rateLimit from '@fastify/rate-limit';
 import {
   findDomainByName,
+  hasAcceptedLatestLegalVersion,
   markDomainVerificationFailed,
   markDomainVerified,
   startDomainVerification,
@@ -22,6 +23,7 @@ vi.mock('@janus/db', async (importOriginal) => {
     findDomainByName: vi.fn(),
     markDomainVerified: vi.fn(),
     markDomainVerificationFailed: vi.fn(),
+    hasAcceptedLatestLegalVersion: vi.fn(),
   };
 });
 vi.mock('@janus/scanners', async (importOriginal) => {
@@ -35,6 +37,7 @@ const mockFindDomain = vi.mocked(findDomainByName);
 const mockMarkVerified = vi.mocked(markDomainVerified);
 const mockMarkFailed = vi.mocked(markDomainVerificationFailed);
 const mockVerifyOwnership = vi.mocked(verifyDomainOwnership);
+const mockHasAccepted = vi.mocked(hasAcceptedLatestLegalVersion);
 
 const SCANNER_USER_AGENT = 'JanusSecurityScanner/1.0 (+https://example.com/about-scans)';
 const USER_ID = 'user_owner123';
@@ -80,6 +83,10 @@ describe('domainVerificationRoutes', () => {
 
   beforeEach(() => {
     mockSignedIn();
+    // Every existing test in this file is exercising verification logic, not the ToS/AUP gate
+    // itself — default to "already accepted" so requireLegalAcceptance doesn't 403 them. The
+    // gate's own behavior is tested separately below.
+    mockHasAccepted.mockResolvedValue(true);
   });
 
   afterEach(async () => {
@@ -137,6 +144,38 @@ describe('domainVerificationRoutes', () => {
       });
 
       expect(response.statusCode).toBe(401);
+      expect(mockStart).not.toHaveBeenCalled();
+    });
+
+    it('rejects with 403 when the caller has not accepted the Terms of Service', async () => {
+      mockHasAccepted.mockImplementation((_userId, documentType) =>
+        Promise.resolve(documentType !== 'TERMS_OF_SERVICE'),
+      );
+      app = await buildTestApp();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/domains/example.com/verification',
+        payload: { method: 'DNS_TXT' },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(mockStart).not.toHaveBeenCalled();
+    });
+
+    it('rejects with 403 when the caller has not accepted the Acceptable Use Policy', async () => {
+      mockHasAccepted.mockImplementation((_userId, documentType) =>
+        Promise.resolve(documentType !== 'ACCEPTABLE_USE_POLICY'),
+      );
+      app = await buildTestApp();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/domains/example.com/verification',
+        payload: { method: 'DNS_TXT' },
+      });
+
+      expect(response.statusCode).toBe(403);
       expect(mockStart).not.toHaveBeenCalled();
     });
 
