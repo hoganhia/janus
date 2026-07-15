@@ -1,8 +1,19 @@
 # Janus
 
-Passive web security scanning application. Takes a company's public URL and runs non-intrusive checks (TLS config, HTTP headers, DNS records, tech fingerprinting), then produces a scored report.
+[![CI](https://github.com/hoganhia/janus/actions/workflows/ci.yml/badge.svg)](https://github.com/hoganhia/janus/actions/workflows/ci.yml)
+
+Passive web security scanning application. Takes a company's public URL and runs non-intrusive checks (TLS config, HTTP headers, DNS records, tech fingerprinting), then produces a scored report with concrete remediation suggestions for anything that fails.
 
 **Janus does not perform active exploitation, port scanning, or authentication bypass attempts against third-party systems.**
+
+**Live demo:** [janusscan.vercel.app](https://janusscan.vercel.app) — password-protected, ask for access.
+
+## Tech stack
+
+Fastify API + BullMQ background workers + Next.js 16 (App Router) frontend, Postgres (Prisma) +
+Redis, TypeScript throughout, Zod for runtime validation end to end. Deployed as a Docker image
+on Railway (API + worker + Postgres + Redis) and Next.js on Vercel. CVE data is synced from the
+real NVD (National Vulnerability Database) API on a schedule, not bundled/mocked.
 
 ## Monorepo structure
 
@@ -72,7 +83,7 @@ docker run -p 3000:3000 --env-file .env janus
 - `@fastify/rate-limit` middleware
 - `eslint-plugin-security` in lint pipeline
 - `npm audit` in CI + Dependabot for dependency updates
-- Self-service DNS opt-out (`_perimeter-opt-out.<domain> TXT "true"`) honored on every scan
+- Self-service DNS opt-out (`_janus-opt-out.<domain> TXT "true"`) honored on every scan
   target and hop, unless the domain has a verified owner — see
   `packages/shared/src/scan-target/check-opt-out.ts`
 - `POST /api/v1/abuse-report` — a manual-review channel for anyone who can't add the DNS

@@ -1,4 +1,7 @@
+import Link from 'next/link';
 import { ScanConsole } from '@/components/scan-console';
+
+const SAMPLE_REPORT_ID = 'cmrmg3nom000201nxh6ku363o';
 
 const TRUST_STATS = [
   { value: '04', label: 'check categories' },
@@ -26,6 +29,13 @@ export default function Home() {
       <div className="mt-10 w-full">
         <ScanConsole />
       </div>
+
+      <Link
+        href={`/reports/${SAMPLE_REPORT_ID}`}
+        className="text-muted-foreground hover:text-foreground mt-4 text-sm underline underline-offset-4"
+      >
+        Or view a sample report →
+      </Link>
 
       <dl className="text-muted-foreground mt-16 grid w-full max-w-xl grid-cols-3 gap-6 font-mono text-xs">
         {TRUST_STATS.map((stat) => (
