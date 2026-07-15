@@ -10,10 +10,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@clerk/fastify": "3.1.50",
+    "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.0.1",
     "@fastify/rate-limit": "^10.2.2",
+    "@fastify/swagger": "9.8.0",
+    "@fastify/swagger-ui": "^6.1.0",
+    "@janus/db": "workspace:*",
+    "@janus/scanners": "workspace:*",
     "@janus/shared": "workspace:*",
+    "@janus/workers": "workspace:*",
     "fastify": "^5.2.1",
+    "fastify-type-provider-zod": "^5.1.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

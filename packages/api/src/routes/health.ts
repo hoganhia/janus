@@ -1,19 +1,20 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
+// See the comment in ../schemas.ts on why this is 'zod/v4' rather than the classic 'zod' import.
+import { z } from 'zod/v4';
 
-export function healthRoutes(app: FastifyInstance): void {
+const healthResponseSchema = z.object({
+  status: z.string(),
+  timestamp: z.string(),
+});
+
+export const healthRoutes: FastifyPluginCallbackZod = (app) => {
   app.get(
     '/health',
     {
       schema: {
+        tags: ['health'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-            },
-            required: ['status', 'timestamp'],
-          },
+          200: healthResponseSchema,
         },
       },
     },
@@ -22,4 +23,4 @@ export function healthRoutes(app: FastifyInstance): void {
       timestamp: new Date().toISOString(),
     }),
   );
-}
+};

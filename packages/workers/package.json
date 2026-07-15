@@ -13,10 +13,18 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@janus/db": "workspace:*",
     "@janus/shared": "workspace:*",
-    "@janus/scanners": "workspace:*"
+    "@janus/scanners": "workspace:*",
+    "bullmq": "^5.80.2",
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
   }
 }

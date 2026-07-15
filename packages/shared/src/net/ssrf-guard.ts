@@ -90,7 +90,8 @@ function isPrivateOrReservedIpv6(ip: string): boolean {
     return isPrivateOrReservedIpv4(embedded);
   }
 
-  const isUnspecifiedOrLoopback = [g0, g1, g2, g3, g4, g5, g6].every((g) => g === 0) && (g7 === 0 || g7 === 1);
+  const isUnspecifiedOrLoopback =
+    [g0, g1, g2, g3, g4, g5, g6].every((g) => g === 0) && (g7 === 0 || g7 === 1);
   const isUniqueLocal = (g0 & 0xfe00) === 0xfc00; // fc00::/7
   const isLinkLocal = (g0 & 0xffc0) === 0xfe80; // fe80::/10
   const isMulticast = (g0 & 0xff00) === 0xff00; // ff00::/8
@@ -119,7 +120,9 @@ export class UnsafeScanTargetError extends Error {
  * directly (not re-resolve the hostname) so a DNS answer that changes between validation and
  * connection — a rebinding attack — can't redirect the request into a private network.
  */
-export async function resolvePublicAddress(hostname: string): Promise<{ address: string; family: 4 | 6 }> {
+export async function resolvePublicAddress(
+  hostname: string,
+): Promise<{ address: string; family: 4 | 6 }> {
   const literal = hostname.replace(/^\[|\]$/g, '');
   if (isIPv4(literal) || isIPv6(literal)) {
     if (isPrivateOrReservedIp(literal)) {

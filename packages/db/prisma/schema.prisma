@@ -1,0 +1,164 @@
+// This schema intentionally covers only the small, fixed set of products
+// `fingerprintStack` can passively detect (see packages/db/src/product-catalog.ts) — not the
+// full NVD corpus. The sync job pulls CVEs by keyword/CPE for those products specifically.
+
+// Prisma 7 moved the connection URL out of the schema and into prisma.config.ts (used by the
+// CLI/Migrate) plus an explicit driver adapter passed to `new PrismaClient()` at runtime (see
+// src/client.ts) — there's no `url = env(...)` here anymore because Prisma 7 no longer reads it.
+datasource db {
+  provider = "postgresql"
+}
+
+// Generated into src/ (not a sibling generated/ dir) so it stays under tsconfig's rootDir and
+// can be imported/compiled like any other source file.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Cve {
+  id           String   @id // e.g. "CVE-2023-5877"
+  description  String
+  severity     Severity
+  baseScore    Float
+  published    DateTime
+  lastModified DateTime
+  syncedAt     DateTime @updatedAt
+
+  affected CveAffectedProduct[]
+
+  @@index([severity, published])
+}
+
+/// One row per CPE match-criteria entry a CVE lists for a product we track — a single CVE can
+/// affect several version ranges of the same product (e.g. one fixed range per branch).
+model CveAffectedProduct {
+  id     String @id @default(cuid())
+  cveId  String
+  cve    Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
+
+  /// Our own catalog key (see product-catalog.ts), not the raw CPE string — e.g. "nginx".
+  productKey String
+
+  versionStartIncluding String?
+  versionStartExcluding String?
+  versionEndIncluding   String?
+  versionEndExcluding   String?
+  /// Set instead of the range fields when the CPE criteria pins one exact version.
+  exactVersion          String?
+
+  @@index([productKey])
+}
+
+/// Tracks per-product sync progress so the scheduled job can report/debug failures; the actual
+/// pull strategy re-queries each product's full (bounded) CVE set on every run rather than
+/// diffing incrementally — see the sync job for why that's an acceptable simplification here.
+model CveSyncState {
+  productKey    String    @id
+  lastSyncedAt  DateTime?
+  lastStatus    String?
+  lastError     String?
+}
+
+enum DomainVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  FAILED
+  /// A domain that WAS verified but has passed its 90-day verificationExpiresAt without being
+  /// re-verified. Kept distinct from UNVERIFIED so the record still shows it was once proven —
+  /// see the scheduled expiry job in packages/workers/src/domain-verification-expiry.
+  EXPIRED
+}
+
+/// Which ownership-proof mechanism a verification attempt used — see
+/// packages/scanners/src/domain-verification. Both prove the same thing (control over the
+/// domain's DNS zone or web server); which one a given owner can complete is just a matter of
+/// what access they have.
+enum DomainVerificationMethod {
+  DNS_TXT
+  WELL_KNOWN_FILE
+}
+
+/// Gates access to any scan check more assertive than the passive checks in packages/scanners —
+/// only ever set to AUTHENTICATED by a successful verification check
+/// (packages/db/src/domain-verification-repository.ts), and only ever reset to PASSIVE by a
+/// failed re-verification or the scheduled expiry job.
+enum ScanTier {
+  PASSIVE
+  AUTHENTICATED
+}
+
+/// A domain the product knows about, independent of any single scan. `verificationStatus`
+/// tracks whether whoever registered this domain has proven ownership of it via the DNS TXT or
+/// well-known-file challenge in packages/scanners/src/domain-verification.
+/// `verificationToken`/`verificationMethod` describe the current (or most recent) challenge;
+/// `verificationExpiresAt` is when a successful verification stops counting — ownership proof
+/// isn't permanent, since domains change hands.
+model Domain {
+  id                     String                    @id @default(cuid())
+  /// Stored lowercased (DNS names are case-insensitive) so "Example.com" and "example.com"
+  /// can't create two rows — enforced in scan-report-repository.ts, not at the DB level, since
+  /// Postgres has no case-insensitive unique constraint without a functional index.
+  domain                 String                    @unique
+  verificationStatus     DomainVerificationStatus  @default(UNVERIFIED)
+  verificationMethod     DomainVerificationMethod?
+  verificationToken      String?
+  verifiedAt             DateTime?
+  /// Set to verifiedAt + 90 days on successful verification; null until the first success.
+  /// Re-verifying (successfully) before this passes just pushes it forward another 90 days.
+  verificationExpiresAt  DateTime?
+  scanTier               ScanTier                  @default(PASSIVE)
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+
+  scanReports ScanReport[]
+
+  @@index([verificationStatus, verificationExpiresAt])
+}
+
+enum LetterGrade {
+  A
+  B
+  C
+  D
+  F
+}
+
+/// One row per completed `scoreReport()` run for a domain, kept forever (never overwritten) so
+/// `scannedAt` versions a full history per domain and trends can be charted later. `domain` is
+/// modeled as a relation rather than a bare string column, matching `CveAffectedProduct.cve`'s
+/// pattern elsewhere in this schema — it's what makes "show historical trends per domain"
+/// (querying `Domain.scanReports` ordered by `scannedAt`) a normal indexed query instead of a
+/// string-matching scan.
+model ScanReport {
+  id       String @id @default(cuid())
+  domainId String
+  domain   Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  scannedAt DateTime
+
+  /// The raw typed scanner outputs passed into `scoreReport()` (`ScanResults` from
+  /// @janus/scanners: tls/headers/dns/fingerprint), stored as-is for later re-scoring or audit
+  /// if the grading logic changes.
+  rawResults Json
+
+  /// The full `ScoreReport` object `scoreReport()` returned (per-category scores/grades,
+  /// overall score, disclaimer). `overallGrade` and `overallScore` below duplicate two fields
+  /// out of this JSON so trend queries (chart overall score/grade over time for a domain) don't
+  /// need to parse JSON in application code or in SQL.
+  computedScore Json
+  overallGrade  LetterGrade
+  overallScore  Int
+
+  createdAt DateTime @default(now())
+
+  @@index([domainId, scannedAt])
+}

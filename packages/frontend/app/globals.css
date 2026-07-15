@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.5rem;
+
+  /* Palette lifted directly from the Perimeter mockup. */
+  --background: #060a07;
+  --foreground: #ffffff;
+
+  --card: #0d140f;
+  --card-foreground: #ffffff;
+
+  --popover: #0d140f;
+  --popover-foreground: #ffffff;
+
+  --primary: #32cd32;
+  --primary-foreground: #060a07;
+
+  --secondary: #101a12;
+  --secondary-foreground: #ffffff;
+
+  --muted: #101a12;
+  --muted-foreground: #8ea38f;
+
+  --accent: #101a12;
+  --accent-foreground: #32cd32;
+
+  --destructive: #ff5c5c;
+  --destructive-foreground: #ffffff;
+
+  --warning: #ffb84d;
+  --warning-foreground: #060a07;
+
+  --border: #1c2b1e;
+  --input: #1c2b1e;
+  --ring: #32cd32;
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/*
+ * This app is dark-by-design (matches the mockup) rather than light/dark-toggleable, so the
+ * `.dark` class variant above is kept only for shadcn component compatibility and isn't
+ * currently applied anywhere.
+ */
+.dark {
+  --background: #060a07;
+  --foreground: #ffffff;
+  --card: #0d140f;
+  --card-foreground: #ffffff;
+  --popover: #0d140f;
+  --popover-foreground: #ffffff;
+  --primary: #32cd32;
+  --primary-foreground: #060a07;
+  --secondary: #101a12;
+  --secondary-foreground: #ffffff;
+  --muted: #101a12;
+  --muted-foreground: #8ea38f;
+  --accent: #101a12;
+  --accent-foreground: #32cd32;
+  --destructive: #ff5c5c;
+  --destructive-foreground: #ffffff;
+  --border: #1c2b1e;
+  --input: #1c2b1e;
+  --ring: #32cd32;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}

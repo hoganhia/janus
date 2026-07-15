@@ -42,6 +42,7 @@ The API starts on `http://localhost:3000`.
 | `pnpm dev`       | Start API in watch mode |
 | `pnpm build`     | Build all packages      |
 | `pnpm typecheck` | Type-check all packages |
+| `pnpm test`      | Run Vitest unit tests   |
 | `pnpm lint`      | Run ESLint              |
 | `pnpm format`    | Format with Prettier    |
 | `pnpm audit`     | Run dependency audit    |

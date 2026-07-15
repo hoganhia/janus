@@ -23,6 +23,19 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['**/dist/**', '**/node_modules/**', 'eslint.config.js'],
+    // packages/frontend is a Next.js app with its own eslint.config.mjs (eslint-config-next,
+    // JSX/React rules) and its own tsconfig.json that deliberately doesn't extend
+    // tsconfig.base.json (Next.js needs `moduleResolution: "bundler"` and DOM/JSX support this
+    // config's NodeNext-resolution, backend-focused ruleset isn't set up for) — linted
+    // separately via `pnpm --filter @janus/frontend lint`, chained into the root `lint` script.
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/generated/**',
+      'eslint.config.js',
+      'vitest.config.ts',
+      '**/prisma.config.ts',
+      'packages/frontend/**',
+    ],
   },
 );

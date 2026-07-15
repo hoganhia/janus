@@ -1,4 +1,25 @@
 packages:
   - 'packages/*'
 allowBuilds:
+  '@prisma/engines': true
   esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  # next's own optional dependency for next/image optimization — native binary build, no
+  # native binary means image optimization silently falls back to a slower path, not a
+  # security concern to allow.
+  sharp: true
+  # Native TS-aware module resolver pulled in via eslint-config-next's import-plugin chain
+  # (eslint-import-resolver-typescript > eslint-module-utils > eslint-plugin-import).
+  unrs-resolver: true
+overrides:
+  # Transitive dev-tooling dependency of prisma (prisma > @prisma/dev > @hono/node-server), not
+  # something we depend on directly. GHSA-92pp-h63x-v22m: middleware bypass via repeated
+  # slashes in serveStatic, fixed in 1.19.13+.
+  '@hono/node-server': '>=1.19.13'
+  # Pinned to the versions @clerk/fastify@3.1.50 (pinned in packages/api) actually declares as
+  # its own dependency range, rather than letting pnpm resolve the newest matching patch —
+  # both were published same-day as of this writing and would otherwise trip pnpm's
+  # minimum-release-age supply-chain check.
+  '@clerk/backend': '3.11.4'
+  '@clerk/shared': '4.25.2'
