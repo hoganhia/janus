@@ -9,6 +9,20 @@ vi.mock('node:dns/promises', () => {
   const lookup = vi.fn();
   return { default: { lookup }, lookup };
 });
+// check-opt-out.ts uses the callback-style `node:dns` module's `.promises.Resolver` (not
+// `node:dns/promises`, mocked separately above) — mocked here too so every test in this file
+// exercises the (now per-hop) opt-out check without making a real DNS query. Defaults to
+// rejecting (fails open, i.e. "not opted out"), matching every existing test's expectations;
+// the dedicated opt-out tests below override this per-test via `mockResolveTxt`.
+const mockResolveTxt = vi.fn();
+const mockCancel = vi.fn();
+vi.mock('node:dns', () => {
+  class Resolver {
+    resolveTxt = mockResolveTxt;
+    cancel = mockCancel;
+  }
+  return { default: { promises: { Resolver } } };
+});
 vi.mock('./pinned-request.js', () => ({ probePinned: vi.fn() }));
 
 // dns.lookup is heavily overloaded (single result vs. array, depending on the `all` option);
@@ -191,6 +205,73 @@ describe('validateScanTarget', () => {
       expect(mockProbePinned).toHaveBeenCalledWith(expect.any(URL), '93.184.216.34', {});
       // Exactly one lookup for the whole request — the "second, rebound" answer above is never consulted.
       expect(mockLookup).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('opt-out', () => {
+    it('rejects a target with an opt-out TXT record set to true', async () => {
+      mockResolveTxt.mockResolvedValueOnce([['true']]);
+      const reason = await rejectionReason(
+        validateScanTarget('http://opted-out.example/', {
+          requesterIp: '203.0.113.9',
+          logger: fakeLogger(),
+        }),
+      );
+      expect(reason).toBe('OPTED_OUT');
+      expect(mockResolveTxt).toHaveBeenCalledWith('_perimeter-opt-out.opted-out.example');
+      expect(mockProbePinned).not.toHaveBeenCalled();
+    });
+
+    it('proceeds past a target with no opt-out record (or a DNS lookup failure)', async () => {
+      mockResolveTxt.mockRejectedValueOnce(
+        Object.assign(new Error('not found'), { code: 'ENOTFOUND' }),
+      );
+      mockLookup.mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]);
+      mockProbePinned.mockResolvedValueOnce({ statusCode: 200, location: undefined });
+
+      const result = await validateScanTarget('http://good.example/', {
+        requesterIp: '203.0.113.9',
+        logger: fakeLogger(),
+      });
+      expect(result.finalUrl).toBe('http://good.example/');
+    });
+
+    it('skips the opt-out check entirely when skipOptOutCheck is set', async () => {
+      mockLookup.mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]);
+      mockProbePinned.mockResolvedValueOnce({ statusCode: 200, location: undefined });
+
+      const result = await validateScanTarget('http://opted-out.example/', {
+        requesterIp: '203.0.113.9',
+        logger: fakeLogger(),
+        skipOptOutCheck: true,
+      });
+
+      expect(result.finalUrl).toBe('http://opted-out.example/');
+      expect(mockResolveTxt).not.toHaveBeenCalled();
+    });
+
+    it('re-checks the opt-out record on a redirect hop, even if the initial hop had none', async () => {
+      mockResolveTxt
+        .mockRejectedValueOnce(Object.assign(new Error('not found'), { code: 'ENOTFOUND' }))
+        .mockResolvedValueOnce([['true']]);
+      mockLookup.mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]);
+      mockProbePinned.mockResolvedValueOnce({
+        statusCode: 302,
+        location: 'http://opted-out-target.example/',
+      });
+
+      const reason = await rejectionReason(
+        validateScanTarget('http://redirector.example/', {
+          requesterIp: '203.0.113.9',
+          logger: fakeLogger(),
+        }),
+      );
+
+      expect(reason).toBe('OPTED_OUT');
+      expect(mockResolveTxt).toHaveBeenNthCalledWith(
+        2,
+        '_perimeter-opt-out.opted-out-target.example',
+      );
     });
   });
 

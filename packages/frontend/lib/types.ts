@@ -136,3 +136,16 @@ export interface ApiErrorBody {
   error: string;
   message: string;
 }
+
+// -- POST /abuse-report ---------------------------------------------------------------------------
+
+export interface AbuseReportInput {
+  domain: string;
+  reason: string;
+  details?: string;
+  contact?: string;
+}
+
+export interface AbuseReportResponse {
+  id: string;
+}

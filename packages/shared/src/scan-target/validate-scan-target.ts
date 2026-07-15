@@ -1,5 +1,6 @@
 import pino, { type Logger } from 'pino';
 import { resolvePublicAddress, UnsafeScanTargetError } from '../net/ssrf-guard.js';
+import { checkOptOut } from './check-opt-out.js';
 import { ScanTargetRejectedError, type ScanTargetRejectionReason } from './errors.js';
 import { probePinned } from './pinned-request.js';
 import type { ScanTargetListStore } from './scan-target-list-store.js';
@@ -16,6 +17,13 @@ export interface ValidateScanTargetOptions {
   maxRedirects?: number;
   /** Sent on every probe request made while resolving redirects, so scanned sites can identify our traffic. */
   userAgent?: string;
+  /**
+   * Skips the `_perimeter-opt-out.<hostname>` DNS TXT check (see check-opt-out.ts) — set this
+   * when the caller has already confirmed the target domain's owner initiated (or otherwise
+   * consented to) this specific scan, e.g. a domain with `scanTier === 'AUTHENTICATED'` via the
+   * ownership verification flow. Default: false (the opt-out record is honored).
+   */
+  skipOptOutCheck?: boolean;
 }
 
 export interface ValidatedScanTarget {
@@ -40,6 +48,7 @@ interface ValidatedHop {
 async function validateHop(
   urlString: string,
   listStore: ScanTargetListStore | undefined,
+  skipOptOutCheck: boolean,
 ): Promise<ValidatedHop> {
   let url: URL;
   try {
@@ -70,6 +79,13 @@ async function validateHop(
     }
   }
 
+  if (!skipOptOutCheck && (await checkOptOut(url.hostname))) {
+    throw new ScanTargetRejectedError(
+      'OPTED_OUT',
+      'Target has opted out of scanning via DNS TXT record',
+    );
+  }
+
   try {
     const { address, family } = await resolvePublicAddress(url.hostname);
     return { url, address, family };
@@ -86,9 +102,10 @@ async function validateHop(
 
 /**
  * The single gate every scanner must pass a target through before connecting to it. Validates
- * URL shape, blocked hostnames, the allow/deny list, and that the target resolves to a public
- * address — then makes a real (redirect-disabled) probe request over a socket pinned to that
- * validated address, following any redirect chain manually and re-running every check against
+ * URL shape, blocked hostnames, the allow/deny list, the `_perimeter-opt-out` DNS TXT record
+ * (see check-opt-out.ts), and that the target resolves to a public address — then makes a real
+ * (redirect-disabled) probe request over a socket pinned to that validated address, following
+ * any redirect chain manually and re-running every check (including the opt-out record) against
  * each hop's target before following it. Every attempt, successful or not, is logged for abuse
  * monitoring.
  */
@@ -105,7 +122,11 @@ export async function validateScanTarget(
 
   try {
     for (;;) {
-      const { url, address, family } = await validateHop(currentUrlString, options.listStore);
+      const { url, address, family } = await validateHop(
+        currentUrlString,
+        options.listStore,
+        options.skipOptOutCheck ?? false,
+      );
 
       const probe = await probePinned(
         url,

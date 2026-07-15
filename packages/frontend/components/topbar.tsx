@@ -9,9 +9,12 @@ export function Topbar() {
         </span>
         PERIMETER <span className="text-muted-foreground font-normal">{'// external scan'}</span>
       </Link>
-      <nav className="font-mono text-sm">
+      <nav className="flex items-center gap-4 font-mono text-sm">
         <Link href="/methodology" className="text-muted-foreground hover:text-foreground">
           Methodology
+        </Link>
+        <Link href="/about-this-scanner" className="text-muted-foreground hover:text-foreground">
+          About
         </Link>
       </nav>
     </header>

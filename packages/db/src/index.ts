@@ -27,6 +27,7 @@ export {
   downgradeExpiredVerification,
   type MarkDomainVerifiedInput,
 } from './domain-verification-repository.js';
+export { createAbuseReport, type CreateAbuseReportInput } from './abuse-report-repository.js';
 export type {
   Severity,
   LetterGrade,
@@ -35,6 +36,7 @@ export type {
   ScanTier,
   Domain,
   ScanReport,
+  AbuseReport,
   PrismaClient,
   Prisma,
 } from './generated/prisma/client.js';

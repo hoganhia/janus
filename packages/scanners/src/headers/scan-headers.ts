@@ -13,7 +13,7 @@ export interface ScanHeadersOptions {
   requesterIp: string;
   /**
    * Identifies this request as an automated security scan, e.g.
-   * `"JanusSecurityScanner/1.0 (+https://example.com/about-scans)"`. Required, with no
+   * `"PerimeterSecurityScanner/1.0 (+https://example.com/about-this-scanner)"`. Required, with no
    * built-in default — a placeholder domain would be actively misleading if it ever shipped
    * un-customized. The linked page should explain what the scan is and how to opt out.
    */

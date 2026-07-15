@@ -2,6 +2,9 @@ packages:
   - 'packages/*'
 allowBuilds:
   '@prisma/engines': true
+  # Transitive dep of @sentry/nextjs's build plugin (source-map upload at build time) — its
+  # postinstall downloads the platform-specific sentry-cli binary from Sentry's own release CDN.
+  '@sentry/cli': true
   esbuild: true
   msgpackr-extract: true
   prisma: true

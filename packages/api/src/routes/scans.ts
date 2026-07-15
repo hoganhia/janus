@@ -1,3 +1,4 @@
+import { findDomainByName } from '@janus/db';
 import { enqueueScanJob, type ScanJobData, type ScanQueueLike } from '@janus/workers';
 import { ScanTargetRejectedError, targetUrlSchema, validateScanTarget } from '@janus/shared';
 import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
@@ -76,6 +77,7 @@ export const scanRoutes: FastifyPluginCallbackZod<ScanRoutesOptions> = (app, opt
         response: {
           202: createScanResponseSchema,
           400: errorResponseSchema,
+          403: errorResponseSchema,
           429: errorResponseSchema,
         },
       },
@@ -94,6 +96,13 @@ export const scanRoutes: FastifyPluginCallbackZod<ScanRoutesOptions> = (app, opt
       }
       const targetUrl = parsed.data;
 
+      // The `_perimeter-opt-out` DNS TXT check (see validateScanTarget/check-opt-out.ts) is
+      // skipped only when the target domain's owner has proven ownership through the
+      // verification flow (AUTHENTICATED scanTier) — that's the "initiated by its own verified
+      // owner" carve-out. Every anonymous/unverified scan target must still honor the record.
+      const domainRow = await findDomainByName(new URL(targetUrl).hostname);
+      const skipOptOutCheck = domainRow?.scanTier === 'AUTHENTICATED';
+
       // The single SSRF/rebinding gate every scanner is built on — see @janus/shared. A target
       // that fails here would fail identically for every scanner, so there's no point queueing
       // it; the worker re-runs this same check right before scanning regardless (see
@@ -103,9 +112,16 @@ export const scanRoutes: FastifyPluginCallbackZod<ScanRoutesOptions> = (app, opt
         await validateScanTarget(targetUrl, {
           requesterIp: request.ip,
           userAgent: options.scannerUserAgent,
+          skipOptOutCheck,
         });
       } catch (err) {
         if (err instanceof ScanTargetRejectedError) {
+          if (err.reason === 'OPTED_OUT') {
+            return reply.status(403).send({
+              error: 'Forbidden',
+              message: 'This domain has opted out of scanning.',
+            });
+          }
           return reply.status(400).send({
             error: 'Bad Request',
             message: 'Target must be a scannable public URL',

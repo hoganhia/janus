@@ -162,3 +162,23 @@ model ScanReport {
 
   @@index([domainId, scannedAt])
 }
+
+/// A complaint submitted via POST /abuse-report — e.g. "stop scanning my site" or "your scanner
+/// is hitting my server too hard". Deliberately *not* linked to the Domain model: a report must
+/// be accepted even for a domain we've never scanned or stored a row for, and this is a
+/// manual-review queue, not scan-eligibility state — the DNS opt-out record (see
+/// packages/shared/src/scan-target/check-opt-out.ts) is what actually blocks future scans;
+/// this table exists for the cases someone can't or hasn't added that record yet.
+model AbuseReport {
+  id      String  @id @default(cuid())
+  domain  String
+  reason  String
+  details String?
+  /// Optional so a report can't be blocked on providing contact info, but present when the
+  /// reporter wants a reply.
+  contact String?
+
+  createdAt DateTime @default(now())
+
+  @@index([domain])
+}

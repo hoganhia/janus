@@ -1,5 +1,6 @@
 import rateLimit from '@fastify/rate-limit';
 import type { ScanJobData, ScanJobLike, ScanJobResult, ScanQueueLike } from '@janus/workers';
+import { findDomainByName, type Domain } from '@janus/db';
 import { validateScanTarget } from '@janus/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
@@ -11,7 +12,13 @@ vi.mock('@janus/shared', async (importOriginal) => {
   return { ...actual, validateScanTarget: vi.fn() };
 });
 
+vi.mock('@janus/db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@janus/db')>();
+  return { ...actual, findDomainByName: vi.fn() };
+});
+
 const mockValidate = vi.mocked(validateScanTarget);
+const mockFindDomainByName = vi.mocked(findDomainByName);
 
 const SCANNER_USER_AGENT = 'JanusSecurityScanner/1.0 (+https://example.com/about-scans)';
 
@@ -140,6 +147,75 @@ describe('scanRoutes', () => {
       });
 
       expect(response.statusCode).toBe(500);
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+
+    it('looks up the target domain and does not skip the opt-out check when it is unverified', async () => {
+      queue = new FakeScanQueue();
+      mockFindDomainByName.mockResolvedValue(null);
+      mockValidate.mockResolvedValue({
+        requestedUrl: 'https://example.com/',
+        finalUrl: 'https://example.com/',
+        pinnedAddress: '93.184.216.34',
+        family: 4,
+        redirectCount: 0,
+      });
+      app = await buildTestApp(queue);
+
+      await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://example.com/' },
+      });
+
+      expect(mockFindDomainByName).toHaveBeenCalledWith('example.com');
+      expect(mockValidate).toHaveBeenCalledWith(
+        'https://example.com/',
+        expect.objectContaining({ skipOptOutCheck: false }),
+      );
+    });
+
+    it('skips the opt-out check when the target domain is AUTHENTICATED (verified owner)', async () => {
+      queue = new FakeScanQueue();
+      mockFindDomainByName.mockResolvedValue({ scanTier: 'AUTHENTICATED' } as Domain);
+      mockValidate.mockResolvedValue({
+        requestedUrl: 'https://example.com/',
+        finalUrl: 'https://example.com/',
+        pinnedAddress: '93.184.216.34',
+        family: 4,
+        redirectCount: 0,
+      });
+      app = await buildTestApp(queue);
+
+      await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://example.com/' },
+      });
+
+      expect(mockValidate).toHaveBeenCalledWith(
+        'https://example.com/',
+        expect.objectContaining({ skipOptOutCheck: true }),
+      );
+    });
+
+    it('rejects an opted-out target with 403, without enqueueing', async () => {
+      queue = new FakeScanQueue();
+      mockFindDomainByName.mockResolvedValue(null);
+      const { ScanTargetRejectedError } =
+        await vi.importActual<typeof import('@janus/shared')>('@janus/shared');
+      mockValidate.mockRejectedValue(
+        new ScanTargetRejectedError('OPTED_OUT', 'Target has opted out of scanning'),
+      );
+      app = await buildTestApp(queue);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/scans',
+        payload: { targetUrl: 'https://opted-out.example.com/' },
+      });
+
+      expect(response.statusCode).toBe(403);
       expect(queue.add).not.toHaveBeenCalled();
     });
 

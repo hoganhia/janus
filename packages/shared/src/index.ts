@@ -11,6 +11,7 @@ export {
   type ValidatedScanTarget,
 } from './scan-target/validate-scan-target.js';
 export { ScanTargetRejectedError, type ScanTargetRejectionReason } from './scan-target/errors.js';
+export { checkOptOut, type CheckOptOutOptions } from './scan-target/check-opt-out.js';
 export {
   InMemoryScanTargetListStore,
   type ScanTargetListStore,

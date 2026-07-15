@@ -38,6 +38,12 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter((origin) => origin.length > 0),
     ),
+  /**
+   * Optional — error tracking (via @sentry/node in the API/worker, @sentry/nextjs in the
+   * frontend) is only enabled when this is set, so local dev with no Sentry project configured
+   * doesn't send anything anywhere. Get one from a Sentry project's Settings > Client Keys page.
+   */
+  SENTRY_DSN: z.string().min(1).optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

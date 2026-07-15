@@ -1,6 +1,8 @@
 import { loadConfig } from '@janus/shared';
+import * as Sentry from '@sentry/node';
 import pino from 'pino';
 import { createScanWorker } from './scan-job/queue.js';
+import { initSentry } from './sentry.js';
 
 /**
  * Standalone entrypoint for the scan worker process — run this as its own long-lived Node
@@ -11,6 +13,8 @@ import { createScanWorker } from './scan-job/queue.js';
 function main(): void {
   const config = loadConfig();
   const logger = pino({ name: 'scan-worker', level: config.LOG_LEVEL });
+
+  initSentry(config.SENTRY_DSN, config.NODE_ENV);
 
   const worker = createScanWorker({ redisUrl: config.REDIS_URL });
 
@@ -28,9 +32,18 @@ function main(): void {
       { jobId: job?.id, targetUrl: job?.data.targetUrl, attemptsMade: job?.attemptsMade, err },
       'Scan job failed',
     );
+    // Every attempt exhausted (job.attemptsMade === job's configured max) is the "unusual
+    // failure rate" signal an operator actually wants paged on — a single retryable transient
+    // failure isn't. Sentry can't distinguish that itself, so it's decided here.
+    if (job !== undefined && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+      Sentry.captureException(err, {
+        extra: { jobId: job.id, targetUrl: job.data.targetUrl, attemptsMade: job.attemptsMade },
+      });
+    }
   });
   worker.on('error', (err) => {
     logger.error({ err }, 'Scan worker error');
+    Sentry.captureException(err);
   });
 
   let shuttingDown = false;

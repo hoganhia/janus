@@ -1,4 +1,4 @@
-import { recordScanReport, type Prisma } from '@janus/db';
+import { findDomainByName, recordScanReport, type Prisma } from '@janus/db';
 import {
   fingerprintStack,
   scanDNS,
@@ -57,6 +57,7 @@ const UNRECOVERABLE_REJECTION_REASONS: ReadonlySet<ScanTargetRejectionReason> = 
   'NOT_ALLOWLISTED',
   'PRIVATE_ADDRESS',
   'TOO_MANY_REDIRECTS',
+  'OPTED_OUT',
 ]);
 
 class ScannerTimeoutError extends Error {}
@@ -208,11 +209,25 @@ function runFingerprintScan(url: string, data: ScanJobData): Promise<Fingerprint
  * `attempts`/`backoff` retry policy applies.
  */
 export async function runScanJob(data: ScanJobData): Promise<ScanJobResult> {
+  // Re-checked here (not just trusted from the API layer's own lookup at submission time) for
+  // the same reason the target itself is re-validated below: enough time may have passed since
+  // enqueue for the domain's verification status — or the opt-out record itself — to have
+  // changed. A malformed target URL is left for validateScanTarget below to reject with its
+  // usual clear MALFORMED_URL reason rather than duplicating that check here.
+  let skipOptOutCheck = false;
+  try {
+    const domainRow = await findDomainByName(new URL(data.targetUrl).hostname);
+    skipOptOutCheck = domainRow?.scanTier === 'AUTHENTICATED';
+  } catch {
+    // Malformed URL — fall through to validateScanTarget's own rejection below.
+  }
+
   let validated;
   try {
     validated = await validateScanTarget(data.targetUrl, {
       requesterIp: data.requesterIp,
       userAgent: data.userAgent,
+      skipOptOutCheck,
     });
   } catch (err) {
     if (err instanceof ScanTargetRejectedError && UNRECOVERABLE_REJECTION_REASONS.has(err.reason)) {

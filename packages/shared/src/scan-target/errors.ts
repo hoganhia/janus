@@ -7,6 +7,7 @@ export type ScanTargetRejectionReason =
   | 'NOT_ALLOWLISTED'
   | 'PRIVATE_ADDRESS'
   | 'TOO_MANY_REDIRECTS'
+  | 'OPTED_OUT'
   | 'PROBE_FAILED';
 
 export class ScanTargetRejectedError extends Error {

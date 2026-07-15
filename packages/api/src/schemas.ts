@@ -18,8 +18,14 @@ export const errorResponseSchema = z.object({
 // eslint-disable-next-line security/detect-unsafe-regex
 const DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 
+export const domainNameSchema = z
+  .string()
+  .min(1)
+  .max(253)
+  .regex(DOMAIN_PATTERN, 'Must be a valid domain name');
+
 export const domainParamSchema = z.object({
-  domain: z.string().min(1).max(253).regex(DOMAIN_PATTERN, 'Must be a valid domain name'),
+  domain: domainNameSchema,
 });
 
 export const letterGradeSchema = z.enum(['A', 'B', 'C', 'D', 'F']);

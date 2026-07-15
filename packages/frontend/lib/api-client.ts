@@ -1,4 +1,6 @@
 import type {
+  AbuseReportInput,
+  AbuseReportResponse,
   ApiErrorBody,
   CreateScanResponse,
   DomainHistoryResponse,
@@ -50,4 +52,11 @@ export function getScanReport(reportId: string): Promise<ScanReportResponse> {
 export function getDomainHistory(domain: string, limit?: number): Promise<DomainHistoryResponse> {
   const query = limit !== undefined ? `?limit=${limit}` : '';
   return request<DomainHistoryResponse>(`/domains/${encodeURIComponent(domain)}/history${query}`);
+}
+
+export function submitAbuseReport(input: AbuseReportInput): Promise<AbuseReportResponse> {
+  return request<AbuseReportResponse>('/abuse-report', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }

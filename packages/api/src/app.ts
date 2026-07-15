@@ -14,6 +14,7 @@ import {
 } from 'fastify-type-provider-zod';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { buildLoggerOptions } from './plugins/logger.js';
+import { abuseReportRoutes } from './routes/abuse-report.js';
 import { domainVerificationRoutes } from './routes/domain-verification.js';
 import { domainRoutes } from './routes/domains.js';
 import { healthRoutes } from './routes/health.js';
@@ -130,6 +131,7 @@ export async function buildApp(): Promise<{
 
   await app.register(domainRoutes, { prefix: '/api/v1' });
   await app.register(scanReportRoutes, { prefix: '/api/v1' });
+  await app.register(abuseReportRoutes, { prefix: '/api/v1' });
 
   return { app, config };
 }

@@ -1,4 +1,4 @@
-import { recordScanReport, type ScanReport } from '@janus/db';
+import { findDomainByName, recordScanReport, type Domain, type ScanReport } from '@janus/db';
 import {
   fingerprintStack,
   scanDNS,
@@ -34,7 +34,7 @@ vi.mock('@janus/scanners', async (importOriginal) => {
 });
 vi.mock('@janus/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@janus/db')>();
-  return { ...actual, recordScanReport: vi.fn() };
+  return { ...actual, recordScanReport: vi.fn(), findDomainByName: vi.fn() };
 });
 
 const mockValidate = vi.mocked(validateScanTarget);
@@ -44,6 +44,7 @@ const mockScanDns = vi.mocked(scanDNS);
 const mockFingerprintStack = vi.mocked(fingerprintStack);
 const mockScoreReport = vi.mocked(scoreReport);
 const mockRecordScanReport = vi.mocked(recordScanReport);
+const mockFindDomainByName = vi.mocked(findDomainByName);
 
 const JOB_DATA: ScanJobData = {
   targetUrl: 'https://example.com/',
@@ -116,6 +117,7 @@ function fakeScanReport(): ScanReport {
 }
 
 function setupHappyPath(): void {
+  mockFindDomainByName.mockResolvedValue(null);
   mockValidate.mockResolvedValue(VALIDATED);
   mockScanTls.mockResolvedValue(tlsResult());
   mockScanHeaders.mockResolvedValue(headersResult());
@@ -136,9 +138,11 @@ describe('runScanJob', () => {
 
     const result = await runScanJob(JOB_DATA);
 
+    expect(mockFindDomainByName).toHaveBeenCalledWith('example.com');
     expect(mockValidate).toHaveBeenCalledWith(JOB_DATA.targetUrl, {
       requesterIp: JOB_DATA.requesterIp,
       userAgent: JOB_DATA.userAgent,
+      skipOptOutCheck: false,
     });
     expect(mockScanTls).toHaveBeenCalledWith('example.com', VALIDATED.pinnedAddress, {
       timeoutMs: 8000,
@@ -185,6 +189,36 @@ describe('runScanJob', () => {
 
     await expect(runScanJob(JOB_DATA)).rejects.toThrow(UnrecoverableError);
     expect(mockScanTls).not.toHaveBeenCalled();
+  });
+
+  it('converts an OPTED_OUT rejection into an UnrecoverableError too', async () => {
+    mockFindDomainByName.mockResolvedValue(null);
+    const { ScanTargetRejectedError } =
+      await vi.importActual<typeof import('@janus/shared')>('@janus/shared');
+    mockValidate.mockRejectedValue(
+      new ScanTargetRejectedError('OPTED_OUT', 'Target has opted out of scanning'),
+    );
+
+    await expect(runScanJob(JOB_DATA)).rejects.toThrow(UnrecoverableError);
+    expect(mockScanTls).not.toHaveBeenCalled();
+  });
+
+  it('skips the opt-out check when the target domain is AUTHENTICATED (verified owner)', async () => {
+    mockFindDomainByName.mockResolvedValue({ scanTier: 'AUTHENTICATED' } as Domain);
+    mockValidate.mockResolvedValue(VALIDATED);
+    mockScanTls.mockResolvedValue(tlsResult());
+    mockScanHeaders.mockResolvedValue(headersResult());
+    mockScanDns.mockResolvedValue(dnsResult());
+    mockFingerprintStack.mockResolvedValue(fingerprintResult());
+    mockScoreReport.mockReturnValue(fakeScoreReport());
+    mockRecordScanReport.mockResolvedValue(fakeScanReport());
+
+    await runScanJob(JOB_DATA);
+
+    expect(mockValidate).toHaveBeenCalledWith(
+      JOB_DATA.targetUrl,
+      expect.objectContaining({ skipOptOutCheck: true }),
+    );
   });
 
   it('does not convert a PROBE_FAILED rejection — lets it retry normally', async () => {
